@@ -2,6 +2,7 @@ import numpy as np
 import numpy.linalg as la
 import ctf
 import sys
+from ctf import random
 
 def compute_lin_sys(X, Y):
     return (X.T() @ X) * (Y.T() @ Y)
@@ -32,9 +33,11 @@ def build_leaves(T,A,B,C):
     return [RHS_A,RHS_B,RHS_C]
 
 def update_leaves_A(T,A1,A2,B,C):
-    TA = ctf.einsum("ijk,ir,ra->jka",T,A1,A2)
-    URHS_B = ctf.einsum("jka,ka->ja",TA,C)
-    URHS_C = ctf.einsum("jka,ja->ka",TA,B)
+    TA1 = ctf.einsum("ijk,ir->jkr",T,A1)
+    URHS_B1 = ctf.einsum("jkr,ka->jra",TA1,C)
+    URHS_C1 = ctf.einsum("jkr,ja->kra",TA1,B)
+    URHS_B = ctf.einsum("jra,ra->ja",URHS_B1,A2)
+    URHS_C = ctf.einsum("kra,ra->ka",URHS_C1,A2)
     return [URHS_B,URHS_C]
 
 def update_leaves_B(T,A,B1,B2,C):
