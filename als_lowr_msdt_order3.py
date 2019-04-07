@@ -52,7 +52,7 @@ def update_leaves_C(T,A,B,C1,C2):
     URHS_B = ctf.einsum("ija,ia->ja",TC,A)
     return [URHS_A,URHS_B]
 
-def solve_sys_lowr(G, RHS, r):
+def solve_sys_lowr_post_fac(G, RHS, r):
     [U,S,VT] = ctf.svd(G)
     S = 1./S
     X = RHS @ U
@@ -60,6 +60,18 @@ def solve_sys_lowr(G, RHS, r):
     [U,S,VT]=ctf.svd(X@ VT)
     0.*VT.i("ij") << S.i("i") * VT.i("ij")
     return [U[:,:r],VT[:r,:]]
+    #return [X[:,-r:], VT[-r:,:]]
+
+
+def solve_sys_lowr(G, RHS, r):
+    [U,S,VT] = ctf.svd(G)
+    S = 1./S**.5
+    X = RHS @ U
+    0.*X.i("ij") << S.i("j") * X.i("ij")
+    [xU,xS,xVT]=ctf.svd(X,r)
+    0.*xVT.i("ij") << xS.i("i") * xVT.i("ij")
+    0.*xVT.i("ij") << S.i("j") * xVT.i("ij")
+    return [xU,xVT@VT]
     #return [X[:,-r:], VT[-r:,:]]
 
 
