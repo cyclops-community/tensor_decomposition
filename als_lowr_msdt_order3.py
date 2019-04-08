@@ -45,9 +45,20 @@ def naive_ALS_step(T,A,B,C):
     C = solve_sys(compute_lin_sys(A,B), RHS)
     return [A,B,C]
 
+def dt_ALS_step(T,A,B,C):
+    TC = ctf.einsum("ijk,ka->ija",T,C)
+    RHS = ctf.einsum("ija,ja->ia",TC,B)
+    A = solve_sys(compute_lin_sys(B,C), RHS)
+    RHS = ctf.einsum("ija,ia->ja",TC,A)
+    B = solve_sys(compute_lin_sys(A,C), RHS)
+    RHS = ctf.einsum("ijk,ia,ja->ka",T,A,B)
+    C = solve_sys(compute_lin_sys(A,B), RHS)
+    return [A,B,C]
+
 def build_leaves(T,A,B,C):
-    RHS_A = ctf.einsum("ijk,ja,ka->ia",T,B,C)
-    RHS_B = ctf.einsum("ijk,ia,ka->ja",T,A,C)
+    TC = ctf.einsum("ijk,ka->ija",T,C)
+    RHS_A = ctf.einsum("ija,ja->ia",TC,B)
+    RHS_B = ctf.einsum("ija,ia->ja",TC,A)
     RHS_C = ctf.einsum("ijk,ia,ja->ka",T,A,B)
     return [RHS_A,RHS_B,RHS_C]
 
@@ -161,15 +172,18 @@ def init_rand(s,R,sp_frac=1.):
     C = ctf.random.random((s,R))
     return [A,B,C,T,O]
 
-def test_rand_naive(s,R,num_iter,sp_frac):
+def test_rand_naive(s,R,num_iter,sp_frac,sp_res):
     [A,B,C,T,O] = init_rand(s,R,sp_frac)
     time_all = 0.
     for i in range(num_iter):
-        res = get_residual(T,A,B,C)
+        if sp_res:
+            res = get_residual_sp(O,T,A,B,C)
+        else:
+            res = get_residual(T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
         t0 = time.time()
-        [A,B,C] = naive_ALS_step(T,A,B,C)
+        [A,B,C] = dt_ALS_step(T,A,B,C)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Sweep took", t1-t0,"seconds")
@@ -188,7 +202,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         if ctf.comm().rank() == 0:
             print("Residual is", res)
         t0 = time.time()
-        [A,B,C] = naive_ALS_step(T,A,B,C)
+        [A,B,C] = dt_ALS_step(T,A,B,C)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Full-rank sweep took", t1-t0,"seconds")
@@ -217,6 +231,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
 
 
 if __name__ == "__main__":
+    w = ctf.comm()
     s = 40
     R = 10
     r = 10
@@ -251,7 +266,7 @@ if __name__ == "__main__":
     if run_naive:
         if ctf.comm().rank() == 0:
             print("Testing naive version, printing residual before every ALS sweep")
-        test_rand_naive(s,R,num_iter,sp_frac)
+        test_rand_naive(s,R,num_iter,sp_frac,sp_res)
     if run_lowr:
         if ctf.comm().rank() == 0:
             print("Testing low rank version, printing residual before every ALS sweep")
