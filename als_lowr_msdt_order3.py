@@ -215,6 +215,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         if ctf.comm().rank() == 0:
             print("Iteration ",i, "Full-rank sweep took", t1-t0,"seconds")
         time_init += t1-t0
+        print ("Total time is ", time_init)
     time_lowr = time.time()
     [RHS_A,RHS_B,RHS_C] = build_leaves(T,A,B,C)
     time_lowr -= time.time()
@@ -234,6 +235,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         if ctf.comm().rank() == 0:
             print("Iteration ",i, "Low-rank sweep took", t1-t0,"seconds")
         time_lowr += t1-t0
+        print("Total time is ", time_lowr)
     if ctf.comm().rank() == 0:
         print("Low rank method (sparse update leaves =",sp_ul,") took",time_init,"for initial full rank steps",time_lowr,"for low rank steps and",time_init+time_lowr,"seconds overall")
 
