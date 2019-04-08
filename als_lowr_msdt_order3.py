@@ -120,6 +120,18 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 #    return [U[:,:r],VT[:r,:]]
 #    #return [X[:,-r:], VT[-r:,:]]
 
+def randomized_svd(A, r, iter=1):
+    (m,n) = A.shape
+    X0,_ = ctf.qr(ctf.random.random((n,r)))
+    temp = ctf.dot(A.T(), ctf.dot(A, X0))
+    Q,_ = ctf.qr(temp)
+    for i in range(1, iter):
+        temp = ctf.dot(A.T(), ctf.dot(A, Q))
+        Q,_ = ctf.qr(temp)
+    B = ctf.dot(A, Q)
+    [U,S,VT] = ctf.svd(B)
+    VT2 = ctf.dot(VT,Q.T())
+    return [U, S, VT2]
 
 def solve_sys_lowr(G, RHS, r):
     t0 = time.time()
@@ -127,7 +139,7 @@ def solve_sys_lowr(G, RHS, r):
     S = 1./S**.5
     X = ctf.dot(RHS, U)
     0.*X.i("ij") << S.i("j") * X.i("ij")
-    [xU,xS,xVT]=ctf.svd(X,r)
+    [xU,xS,xVT]=randomized_svd(X,r)
     0.*xVT.i("ij") << xS.i("i") * xVT.i("ij")
     0.*xVT.i("ij") << S.i("j") * xVT.i("ij")
     t1 = time.time()
