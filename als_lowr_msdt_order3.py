@@ -25,7 +25,7 @@ def get_residual_sp(O,T,A,B,C):
     if ctf.comm().rank() == 0:
         print("Sparse residual computation took",t1-t0,"seconds")
     return nrm
-   
+
 
 def get_residual(T,A,B,C):
     t0 = time.time()
@@ -118,6 +118,7 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 
 
 def solve_sys_lowr(G, RHS, r):
+    t0 = time.time()
     [U,S,VT] = ctf.svd(G)
     S = 1./S**.5
     X = ctf.dot(RHS, U)
@@ -125,6 +126,9 @@ def solve_sys_lowr(G, RHS, r):
     [xU,xS,xVT]=ctf.svd(X,r)
     0.*xVT.i("ij") << xS.i("i") * xVT.i("ij")
     0.*xVT.i("ij") << S.i("j") * xVT.i("ij")
+    t1 = time.time()
+    if ctf.comm().rank() == 0:
+        print("solve system low rank took",t1-t0,"seconds")
     return [xU,ctf.dot(xVT, VT)]
     #return [X[:,-r:], VT[-r:,:]]
 
