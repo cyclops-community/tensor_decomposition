@@ -213,7 +213,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         [A,B,C] = dt_ALS_step(T,A,B,C)
         t1 = time.time()
         if ctf.comm().rank() == 0:
-            print("Full-rank sweep took", t1-t0,"seconds")
+            print("Iteration ",i, "Full-rank sweep took", t1-t0,"seconds")
         time_init += t1-t0
     time_lowr = time.time()
     [RHS_A,RHS_B,RHS_C] = build_leaves(T,A,B,C)
@@ -232,7 +232,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r)
         t1 = time.time()
         if ctf.comm().rank() == 0:
-            print("Low-rank sweep took", t1-t0,"seconds")
+            print("Iteration ",i, "Low-rank sweep took", t1-t0,"seconds")
         time_lowr += t1-t0
     if ctf.comm().rank() == 0:
         print("Low rank method (sparse update leaves =",sp_ul,") took",time_init,"for initial full rank steps",time_lowr,"for low rank steps and",time_init+time_lowr,"seconds overall")
