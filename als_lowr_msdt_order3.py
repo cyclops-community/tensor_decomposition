@@ -6,14 +6,14 @@ from ctf import random
 import time
 
 def compute_lin_sys(X, Y):
-    return (X.T() @ X) * (Y.T() @ Y)
+    return ctf.dot(X.T(), X) * ctf.dot(Y.T(), Y)
 
 def solve_sys(G, RHS):
     [U,S,VT] = ctf.svd(G)
     S = 1./S
-    X = RHS @ U
+    X = ctf.dot(RHS, U)
     0.*X.i("ij") << S.i("j") * X.i("ij")
-    return X @ VT
+    return ctf.dot(X, VT)
 
 def get_residual_sp(O,T,A,B,C):
     t0 = time.time()
@@ -98,9 +98,9 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 #def solve_sys_lowr_post_fac(G, RHS, r):
 #    [U,S,VT] = ctf.svd(G)
 #    S = 1./S
-#    X = RHS @ U
+#    X = ctf.dot(RHS, U)
 #    0.*X.i("ij") << S.i("j") * X.i("ij")
-#    [U,S,VT]=ctf.svd(X@ VT)
+#    [U,S,VT]=ctf.dot(ctf.svd(X, ) VT)
 #    0.*VT.i("ij") << S.i("i") * VT.i("ij")
 #    return [U[:,:r],VT[:r,:]]
 #    #return [X[:,-r:], VT[-r:,:]]
@@ -109,36 +109,36 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 def solve_sys_lowr(G, RHS, r):
     [U,S,VT] = ctf.svd(G)
     S = 1./S**.5
-    X = RHS @ U
+    X = ctf.dot(RHS, U)
     0.*X.i("ij") << S.i("j") * X.i("ij")
     [xU,xS,xVT]=ctf.svd(X,r)
     0.*xVT.i("ij") << xS.i("i") * xVT.i("ij")
     0.*xVT.i("ij") << S.i("j") * xVT.i("ij")
-    return [xU,xVT@VT]
+    return [xU,ctf.dot(xVT, VT)]
     #return [X[:,-r:], VT[-r:,:]]
 
 
 def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,ul="update_leaves"):
     G = compute_lin_sys(B,C)
-    ERHS_A = RHS_A - A @ G
+    ERHS_A = RHS_A - ctf.dot(A, G)
     [A1,A2] = solve_sys_lowr(G, ERHS_A, r)
-    A += A1 @ A2
+    A += ctf.dot(A1, A2)
     [URHS_B,URHS_C] = globals()[ul+"_A"](T,A1,A2,B,C)
     RHS_B += URHS_B
     RHS_C += URHS_C
 
     G = compute_lin_sys(A,C)
-    ERHS_B = RHS_B - B @ G
+    ERHS_B = RHS_B - ctf.dot(B, G)
     [B1,B2] = solve_sys_lowr(G, ERHS_B, r)
-    B += B1 @ B2
+    B += ctf.dot(B1, B2)
     [URHS_A,URHS_C] = globals()[ul+"_B"](T,A,B1,B2,C)
     RHS_A += URHS_A
     RHS_C += URHS_C
 
     G = compute_lin_sys(A,B)
-    ERHS_C = RHS_C - C @ G
+    ERHS_C = RHS_C - ctf.dot(C, G)
     [C1,C2] = solve_sys_lowr(G, ERHS_C, r)
-    C += C1 @ C2
+    C += ctf.dot(C1, C2)
     [URHS_A,URHS_B] = globals()[ul+"_C"](T,A,B,C1,C2)
     RHS_A += URHS_A
     RHS_B += URHS_B
