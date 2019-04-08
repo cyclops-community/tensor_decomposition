@@ -9,10 +9,14 @@ def compute_lin_sys(X, Y):
     return ctf.dot(X.T(), X) * ctf.dot(Y.T(), Y)
 
 def solve_sys(G, RHS):
+    t0 = time.time()
     [U,S,VT] = ctf.svd(G)
     S = 1./S
     X = ctf.dot(RHS, U)
     0.*X.i("ij") << S.i("j") * X.i("ij")
+    t1 = time.time()
+    if ctf.comm().rank() == 0:
+        print("Solving linear system took ",t1-t0,"seconds")
     return ctf.dot(X, VT)
 
 def get_residual_sp(O,T,A,B,C):
