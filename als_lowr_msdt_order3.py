@@ -8,12 +8,18 @@ import time
 def compute_lin_sys(X, Y):
     return ctf.dot(X.T(), X) * ctf.dot(Y.T(), Y)
 
-def solve_sys(G, RHS):
+def solve_sys_svd(G, RHS):
     [U,S,VT] = ctf.svd(G)
     S = 1./S
     X = ctf.dot(RHS, U)
     0.*X.i("ij") << S.i("j") * X.i("ij")
     return ctf.dot(X, VT)
+
+def solve_sys(G, RHS):
+    L = ctf.cholesky(G)
+    X = ctf.solve_tri(L, RHS, True, False, True)
+    X = ctf.solve_tri(L, X, True, False, False)
+    return X
 
 def get_residual_sp(O,T,A,B,C):
     t0 = time.time()
@@ -117,7 +123,7 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 #    #return [X[:,-r:], VT[-r:,:]]
 
 
-def solve_sys_lowr(G, RHS, r):
+def solve_sys_lowr_svd(G, RHS, r):
     [U,S,VT] = ctf.svd(G)
     S = 1./S**.5
     X = ctf.dot(RHS, U)
@@ -127,6 +133,16 @@ def solve_sys_lowr(G, RHS, r):
     0.*xVT.i("ij") << S.i("j") * xVT.i("ij")
     return [xU,ctf.dot(xVT, VT)]
     #return [X[:,-r:], VT[-r:,:]]
+
+def solve_sys_lowr(G, RHS, r):
+    L = ctf.cholesky(G)
+    X = ctf.solve_tri(L, RHS, True, False, True)
+    [xU,xS,xVT]=ctf.svd(X,r)
+    xVT = ctf.solve_tri(L, xVT, True, False, False)
+    0.*xVT.i("ij") << xS.i("i") * xVT.i("ij")
+    return [xU,xVT]
+    #return [X[:,-r:], VT[-r:,:]]
+
 
 
 def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,ul="update_leaves"):
