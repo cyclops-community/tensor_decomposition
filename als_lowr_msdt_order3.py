@@ -9,10 +9,14 @@ def compute_lin_sys(X, Y):
     return ctf.dot(X.T(), X) * ctf.dot(Y.T(), Y)
 
 def solve_sys_svd(G, RHS):
+    t0 = time.time()
     [U,S,VT] = ctf.svd(G)
     S = 1./S
     X = ctf.dot(RHS, U)
     0.*X.i("ij") << S.i("j") * X.i("ij")
+    t1 = time.time()
+    if ctf.comm().rank() == 0:
+        print("Solving linear system took ",t1-t0,"seconds")
     return ctf.dot(X, VT)
 
 def solve_sys(G, RHS):
@@ -31,7 +35,7 @@ def get_residual_sp(O,T,A,B,C):
     if ctf.comm().rank() == 0:
         print("Sparse residual computation took",t1-t0,"seconds")
     return nrm
-   
+
 
 def get_residual(T,A,B,C):
     t0 = time.time()
@@ -122,15 +126,31 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 #    return [U[:,:r],VT[:r,:]]
 #    #return [X[:,-r:], VT[-r:,:]]
 
+def randomized_svd(A, r, iter=1):
+    (m,n) = A.shape
+    X0,_ = ctf.qr(ctf.random.random((n,r)))
+    temp = ctf.dot(A.T(), ctf.dot(A, X0))
+    Q,_ = ctf.qr(temp)
+    for i in range(1, iter):
+        temp = ctf.dot(A.T(), ctf.dot(A, Q))
+        Q,_ = ctf.qr(temp)
+    B = ctf.dot(A, Q)
+    [U,S,VT] = ctf.svd(B)
+    VT2 = ctf.dot(VT,Q.T())
+    return [U, S, VT2]
 
 def solve_sys_lowr_svd(G, RHS, r):
+    t0 = time.time()
     [U,S,VT] = ctf.svd(G)
     S = 1./S**.5
     X = ctf.dot(RHS, U)
     0.*X.i("ij") << S.i("j") * X.i("ij")
-    [xU,xS,xVT]=ctf.svd(X,r)
+    [xU,xS,xVT]=randomized_svd(X,r)
     0.*xVT.i("ij") << xS.i("i") * xVT.i("ij")
     0.*xVT.i("ij") << S.i("j") * xVT.i("ij")
+    t1 = time.time()
+    if ctf.comm().rank() == 0:
+        print("solve system low rank took",t1-t0,"seconds")
     return [xU,ctf.dot(xVT, VT)]
     #return [X[:,-r:], VT[-r:,:]]
 
@@ -221,8 +241,10 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         [A,B,C] = dt_ALS_step(T,A,B,C)
         t1 = time.time()
         if ctf.comm().rank() == 0:
-            print("Full-rank sweep took", t1-t0,"seconds")
+            print("Iteration ",i, "Full-rank sweep took", t1-t0,"seconds")
         time_init += t1-t0
+        if ctf.comm().rank() == 0:
+            print ("Total time is ", time_init)
     time_lowr = time.time()
     [RHS_A,RHS_B,RHS_C] = build_leaves(T,A,B,C)
     time_lowr -= time.time()
@@ -240,8 +262,10 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r)
         t1 = time.time()
         if ctf.comm().rank() == 0:
-            print("Low-rank sweep took", t1-t0,"seconds")
+            print("Iteration ",i, "Low-rank sweep took", t1-t0,"seconds")
         time_lowr += t1-t0
+        if ctf.comm().rank() == 0:
+            print("Total time is ", time_lowr)
     if ctf.comm().rank() == 0:
         print("Low rank method (sparse update leaves =",sp_ul,") took",time_init,"for initial full rank steps",time_lowr,"for low rank steps and",time_init+time_lowr,"seconds overall")
 
