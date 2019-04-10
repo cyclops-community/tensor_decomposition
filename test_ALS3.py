@@ -4,8 +4,9 @@ from ctf import random
 import sys
 import time
 import common_ALS3_kernels as cak
-import lowr_ALS3 as lALS
-import standard_ALS3 as sALS
+import lowr_ALS3 as lowr_ALS
+import standard_ALS3 as stnd_ALS
+import sliced_ALS3 as slic_ALS
 import synthetic_tensors as stsrs
 
 def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False):
@@ -22,13 +23,48 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False):
         if ctf.comm().rank() == 0:
             print("Residual is", res)
         t0 = time.time()
-        [A,B,C] = sALS.dt_ALS_step(T,A,B,C)
+        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
     if ctf.comm().rank() == 0:
         print("Naive method took",time_all,"seconds overall")
+
+def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False):
+    if mm_test == True:
+        [A,B,C,T,O] = stsrs.init_mm(s,R)
+    else:
+        [A,B,C,T,O] = stsrs.init_rand(s,R,sp_frac)
+    time_all = 0.
+    Ta = []
+    Tb = []
+    Tc = []
+
+    b = int((s+num_slices-1)/num_slices)
+    for i in range(num_slices):
+        st = i*b
+        end = min(st+b,s)
+        Ta.append(T[st:end,:,:])
+        Tb.append(T[:,st:end,:])
+        Tc.append(T[:,:,st:end])
+        
+    for i in range(num_iter):
+        if sp_res:
+            res = cak.get_residual_sp(O,T,A,B,C)
+        else:
+            res = cak.get_residual(T,A,B,C)
+        if ctf.comm().rank() == 0:
+            print("Residual is", res)
+        t0 = time.time()
+        [A,B,C] = slic_ALS.sliced_ALS_step(Ta,Tb,Tc,A,B,C)
+        t1 = time.time()
+        if ctf.comm().rank() == 0:
+            print("Sweep took", t1-t0,"seconds")
+        time_all += t1-t0
+    if ctf.comm().rank() == 0:
+        print("Naive method took",time_all,"seconds overall")
+
 
 def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False):
     if mm_test == True:
@@ -44,7 +80,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         if ctf.comm().rank() == 0:
             print("Residual is", res)
         t0 = time.time()
-        [A,B,C] = sALS.dt_ALS_step(T,A,B,C)
+        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Full-rank sweep took", t1-t0,"seconds, iteration ",i)
@@ -61,14 +97,14 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         A2 = ctf.random.random((r,R))
         B2 = ctf.random.random((r,R))
         C2 = ctf.random.random((r,R))
-        [RHS_A,RHS_B,RHS_C] = lALS.build_leaves_lowr(T,A1,A2,B1,B2,C1,C2)
+        [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves_lowr(T,A1,A2,B1,B2,C1,C2)
         A = ctf.dot(A1,A2)
         B = ctf.dot(B1,B2)
         C = ctf.dot(C1,C2)
         if ctf.comm().rank() == 0:
             print("Done initializing leaves from low rank factor matrices")
     else:
-        [RHS_A,RHS_B,RHS_C] = lALS.build_leaves(T,A,B,C)
+        [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves(T,A,B,C)
     time_lowr = time.time() - time_lowr
     for i in range(num_iter-num_lowr_init_iter):
         if sp_res:
@@ -79,9 +115,9 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             print("Residual is", res)
         t0 = time.time()
         if sp_ul:
-            [A,B,C,RHS_A,RHS_B,RHS_C] = lALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,"update_leaves_sp")
+            [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,"update_leaves_sp")
         else:
-            [A,B,C,RHS_A,RHS_B,RHS_C] = lALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r)
+            [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
@@ -106,6 +142,7 @@ if __name__ == "__main__":
     run_lowr = 1
     run_lowr = 1
     mm_test = 0
+    num_slices = 1
     if len(sys.argv) >= 4:
         s = int(sys.argv[1])
         R = int(sys.argv[2])
@@ -126,6 +163,8 @@ if __name__ == "__main__":
         run_lowr = int(sys.argv[10])
     if len(sys.argv) >= 12:
         mm_test = int(sys.argv[11])
+    if len(sys.argv) >= 13:
+        num_slices = int(sys.argv[12])
 
     if ctf.comm().rank() == 0:
         #print("Arguments to exe are (s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,run_naive,run_lowr,mm_test), default is (",40,10,10,10,2,1.,1,0,1,1,1,")provided", sys.argv)
@@ -140,10 +179,16 @@ if __name__ == "__main__":
         print("run_naive =",run_naive)
         print("run_lowr =",run_lowr)
         print("mm_test (decompose matrix multiplication tensor as opposed to random) =",mm_test)
+        print("num_slices (if greater than one do sliced standard ALS with this many slices) =",num_slices)
     if run_naive:
-        if ctf.comm().rank() == 0:
-            print("Testing naive version, printing residual before every ALS sweep")
-        test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test)
+        if num_slices == 1:
+            if ctf.comm().rank() == 0:
+                print("Testing naive version, printing residual before every ALS sweep")
+            test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test)
+        else:
+            if ctf.comm().rank() == 0:
+                print("Testing sliced version, printing residual before every ALS sweep")
+            test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test)
     if run_lowr:
         if ctf.comm().rank() == 0:
             print("Testing low rank version, printing residual before every ALS sweep")
