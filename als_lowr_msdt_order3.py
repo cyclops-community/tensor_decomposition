@@ -72,6 +72,21 @@ def build_leaves(T,A,B,C):
     RHS_C = ctf.einsum("ijk,ia,ja->ka",T,A,B)
     return [RHS_A,RHS_B,RHS_C]
 
+def build_leaves_lowr(T,A1,A2,B1,B2,C1,C2):
+    TA1 = ctf.einsum("ijk,ir->jkr",T,A1)
+    TA1B1 = ctf.einsum("jkr,jl->krl",TA1,B1)
+    A2B2 = ctf.einsum("ra,la->rla",A2,B2)
+    RHS_C = ctf.einsum("krl,rla->ka",TA1B1,A2B2)
+    TA1C1 = ctf.einsum("jkr,kl->jrl",TA1,C1)
+    A2C2 = ctf.einsum("ra,la->rla",A2,C2)
+    RHS_B = ctf.einsum("jrl,rla->ja",TA1C1,A2C2)
+    TC1 = ctf.einsum("ijk,kl->ijl",T,C1)
+    TB1C1 = ctf.einsum("ijl,jr->irl",TC1,B1)
+    B2C2 = ctf.einsum("ra,la->rla",B2,C2)
+    RHS_A = ctf.einsum("irl,rla->ia",TB1C1,B2C2)
+
+    return [RHS_A,RHS_B,RHS_C]
+
 def update_leaves_A(T,A1,A2,B,C):
     TA = ctf.einsum("ijk,ir,ra->jka",T,A1,A2)
     URHS_B = ctf.einsum("jka,ka->ja",TA,C)
@@ -227,7 +242,7 @@ def init_mm(s,R):
 
 
 def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False):
-    if mm_test:
+    if mm_test == True:
         [A,B,C,T,O] = init_mm(s,R)
     else:
         [A,B,C,T,O] = init_rand(s,R,sp_frac)
@@ -249,7 +264,7 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False):
         print("Naive method took",time_all,"seconds overall")
 
 def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False):
-    if mm_test:
+    if mm_test == True:
         [A,B,C,T,O] = init_mm(s,R)
     else:
         [A,B,C,T,O] = init_rand(s,R,sp_frac)
@@ -270,7 +285,23 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         if ctf.comm().rank() == 0:
             print ("Total time is ", time_init)
     time_lowr = time.time()
-    [RHS_A,RHS_B,RHS_C] = build_leaves(T,A,B,C)
+    if num_lowr_init_iter == 0:
+        if ctf.comm().rank() == 0:
+            print("Initializing leaves from low rank factor matrices")
+        A1 = ctf.random.random((s,r))
+        B1 = ctf.random.random((s,r))
+        C1 = ctf.random.random((s,r))
+        A2 = ctf.random.random((r,R))
+        B2 = ctf.random.random((r,R))
+        C2 = ctf.random.random((r,R))
+        [RHS_A,RHS_B,RHS_C] = build_leaves_lowr(T,A1,A2,B1,B2,C1,C2)
+        A = ctf.dot(A1,A2)
+        B = ctf.dot(B1,B2)
+        C = ctf.dot(C1,C2)
+        if ctf.comm().rank() == 0:
+            print("Done initializing leaves from low rank factor matrices")
+    else:
+        [RHS_A,RHS_B,RHS_C] = build_leaves(T,A,B,C)
     time_lowr = time.time() - time_lowr
     for i in range(num_iter-num_lowr_init_iter):
         if sp_res:
@@ -330,7 +361,18 @@ if __name__ == "__main__":
         mm_test = int(sys.argv[11])
 
     if ctf.comm().rank() == 0:
-        print("Arguments to exe are (s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,run_naive,run_lowr,mm_test), default is (",40,10,10,10,2,1.,1,0,1,1,1,")provided", sys.argv)
+        #print("Arguments to exe are (s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,run_naive,run_lowr,mm_test), default is (",40,10,10,10,2,1.,1,0,1,1,1,")provided", sys.argv)
+        print("s =",s)
+        print("R =",R)
+        print("r =",r)
+        print("num_iter =",num_iter)
+        print("num_lowr_init_iter =",num_lowr_init_iter)
+        print("sp_frac =",sp_frac)
+        print("sp_ul (mem-preserving ordering of low-rank sparse contractions) =",sp_ul)
+        print("sp_res (TTTP-based sparse residual calculation) =",sp_res)
+        print("run_naive =",run_naive)
+        print("run_lowr =",run_lowr)
+        print("mm_test (decompose matrix multiplication tensor as opposed to random) =",mm_test)
     if run_naive:
         if ctf.comm().rank() == 0:
             print("Testing naive version, printing residual before every ALS sweep")
