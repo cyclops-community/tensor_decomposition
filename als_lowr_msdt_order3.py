@@ -157,7 +157,8 @@ def solve_sys_lowr_svd(G, RHS, r):
 def solve_sys_lowr(G, RHS, r):
     L = ctf.cholesky(G)
     X = ctf.solve_tri(L, RHS, True, False, True)
-    [xU,xS,xVT]=ctf.svd(X,r)
+    #[xU,xS,xVT]=ctf.svd_rand(X,r)
+    [xU,xS,xVT]=ctf.svd_rand(X,r,2)
     xVT = ctf.solve_tri(L, xVT, True, False, False)
     0.*xVT.i("ij") << xS.i("i") * xVT.i("ij")
     return [xU,xVT]
@@ -208,8 +209,28 @@ def init_rand(s,R,sp_frac=1.):
     C = ctf.random.random((s,R))
     return [A,B,C,T,O]
 
-def test_rand_naive(s,R,num_iter,sp_frac,sp_res):
-    [A,B,C,T,O] = init_rand(s,R,sp_frac)
+def init_mm(s,R):
+    sr = int(np.sqrt(s)+.1)
+    assert(sr*sr==s)
+    T = ctf.tensor((sr,sr,sr,sr,sr,sr),sp=True)
+    F = ctf.tensor((sr,sr,sr,sr),sp=True)
+    I = ctf.speye(sr)
+    #F.i("ijkl") << I.i("ik")*I.i("jl");
+    #ctf.einsum("ijab,klbc,mnca->ijklmn",F,F,F,out=T)
+    ctf.einsum("ia,jb,kb,lc,mc,na->ijklmn",I,I,I,I,I,I,out=T)
+    T = T.reshape((s,s,s))
+    O = T
+    A = ctf.random.random((s,R))
+    B = ctf.random.random((s,R))
+    C = ctf.random.random((s,R))
+    return [A,B,C,T,O]
+
+
+def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False):
+    if mm_test:
+        [A,B,C,T,O] = init_mm(s,R)
+    else:
+        [A,B,C,T,O] = init_rand(s,R,sp_frac)
     time_all = 0.
     for i in range(num_iter):
         if sp_res:
@@ -227,8 +248,11 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res):
     if ctf.comm().rank() == 0:
         print("Naive method took",time_all,"seconds overall")
 
-def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False):
-    [A,B,C,T,O] = init_rand(s,R,sp_frac)
+def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False):
+    if mm_test:
+        [A,B,C,T,O] = init_mm(s,R)
+    else:
+        [A,B,C,T,O] = init_rand(s,R,sp_frac)
     time_init = 0.
     for i in range(num_lowr_init_iter):
         if sp_res:
@@ -241,13 +265,13 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         [A,B,C] = dt_ALS_step(T,A,B,C)
         t1 = time.time()
         if ctf.comm().rank() == 0:
-            print("Iteration ",i, "Full-rank sweep took", t1-t0,"seconds")
+            print("Full-rank sweep took", t1-t0,"seconds, iteration ",i)
         time_init += t1-t0
         if ctf.comm().rank() == 0:
             print ("Total time is ", time_init)
     time_lowr = time.time()
     [RHS_A,RHS_B,RHS_C] = build_leaves(T,A,B,C)
-    time_lowr -= time.time()
+    time_lowr = time.time() - time_lowr
     for i in range(num_iter-num_lowr_init_iter):
         if sp_res:
             res = get_residual_sp(O,T,A,B,C)
@@ -262,7 +286,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r)
         t1 = time.time()
         if ctf.comm().rank() == 0:
-            print("Iteration ",i, "Low-rank sweep took", t1-t0,"seconds")
+            print("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
         time_lowr += t1-t0
         if ctf.comm().rank() == 0:
             print("Total time is ", time_lowr)
@@ -272,7 +296,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
 
 if __name__ == "__main__":
     w = ctf.comm()
-    s = 40
+    s = 64
     R = 10
     r = 10
     num_iter = 10
@@ -282,6 +306,8 @@ if __name__ == "__main__":
     sp_res = 0
     run_naive = 1
     run_lowr = 1
+    run_lowr = 1
+    mm_test = 0
     if len(sys.argv) >= 4:
         s = int(sys.argv[1])
         R = int(sys.argv[2])
@@ -300,14 +326,16 @@ if __name__ == "__main__":
         run_naive = int(sys.argv[9])
     if len(sys.argv) >= 11:
         run_lowr = int(sys.argv[10])
+    if len(sys.argv) >= 12:
+        mm_test = int(sys.argv[11])
 
     if ctf.comm().rank() == 0:
-        print("Arguments to exe are (s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,run_naive,run_lowr), default is (",40,10,10,10,2,1.,1,0,1,1,")provided", sys.argv)
+        print("Arguments to exe are (s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,run_naive,run_lowr,mm_test), default is (",40,10,10,10,2,1.,1,0,1,1,1,")provided", sys.argv)
     if run_naive:
         if ctf.comm().rank() == 0:
             print("Testing naive version, printing residual before every ALS sweep")
-        test_rand_naive(s,R,num_iter,sp_frac,sp_res)
+        test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test)
     if run_lowr:
         if ctf.comm().rank() == 0:
             print("Testing low rank version, printing residual before every ALS sweep")
-        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res)
+        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test)
