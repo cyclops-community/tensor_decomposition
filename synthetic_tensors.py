@@ -36,4 +36,22 @@ def init_mm(s,R):
     C = ctf.random.random((s,R))
     return [A,B,C,T,O]
 
-
+def init_poisson(s,R):
+    sr = int(s**(1./2)+.1)
+    assert(sr*sr==s)
+    T = ctf.tensor((sr,sr,sr,sr,sr,sr),sp=True)
+    A = (-2.)*ctf.eye(sr,sr,sp=True) + ctf.eye(sr,sr,1,sp=True) + ctf.eye(sr,sr,-1,sp=True)
+    I = ctf.eye(sr,sr,sp=True) # sparse identity matrix
+    #T.i("aixbjy") << A.i("ab")*I.i("ij")*I.i("xy") + I.i("ab")*A.i("ij")*I.i("xy") + I.i("ab")*I.i("ij")*A.i("xy")
+    T.i("abijxy") << A.i("ab")*I.i("ij")*I.i("xy") + I.i("ab")*A.i("ij")*I.i("xy") + I.i("ab")*I.i("ij")*A.i("xy")
+    N = ctf.tensor((s,s,s),sp=True)
+    N.fill_sp_random(-0.0001,.0001,1./s)
+    T = T.reshape((s,s,s)) + N
+    [inds, vals] = T.read_local()
+    vals[:] = 1.
+    O = ctf.tensor(T.shape,sp=True)
+    O.write(inds,vals)
+    A = ctf.random.random((s,R))
+    B = ctf.random.random((s,R))
+    C = ctf.random.random((s,R))
+    return [A,B,C,T,O]

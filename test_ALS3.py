@@ -9,11 +9,13 @@ import standard_ALS3 as stnd_ALS
 import sliced_ALS3 as slic_ALS
 import synthetic_tensors as stsrs
 
-def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False):
+def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
     else:
         [A,B,C,T,O] = stsrs.init_rand(s,R,sp_frac)
+    if pois_test == True:
+        [A,B,C,T,O] = stsrs.init_poisson(s,R)
     time_all = 0.
     for i in range(num_iter):
         if sp_res:
@@ -143,6 +145,7 @@ if __name__ == "__main__":
     run_lowr = 1
     mm_test = 0
     num_slices = 1
+    pois_test = 0
     if len(sys.argv) >= 4:
         s = int(sys.argv[1])
         R = int(sys.argv[2])
@@ -164,7 +167,9 @@ if __name__ == "__main__":
     if len(sys.argv) >= 12:
         mm_test = int(sys.argv[11])
     if len(sys.argv) >= 13:
-        num_slices = int(sys.argv[12])
+        pois_test = int(sys.argv[12])
+    if len(sys.argv) >= 14:
+        num_slices = int(sys.argv[13])
 
     if ctf.comm().rank() == 0:
         #print("Arguments to exe are (s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,run_naive,run_lowr,mm_test), default is (",40,10,10,10,2,1.,1,0,1,1,1,")provided", sys.argv)
@@ -179,17 +184,18 @@ if __name__ == "__main__":
         print("run_naive =",run_naive)
         print("run_lowr =",run_lowr)
         print("mm_test (decompose matrix multiplication tensor as opposed to random) =",mm_test)
+        print("pois_test (decompose Poisson tensor as opposed to random) =",pois_test)
         print("num_slices (if greater than one do sliced standard ALS with this many slices) =",num_slices)
     if run_naive:
         if num_slices == 1:
             if ctf.comm().rank() == 0:
                 print("Testing naive version, printing residual before every ALS sweep")
-            test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test)
+            test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test,pois_test)
         else:
             if ctf.comm().rank() == 0:
                 print("Testing sliced version, printing residual before every ALS sweep")
-            test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test)
+            test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test,pois_test)
     if run_lowr:
         if ctf.comm().rank() == 0:
             print("Testing low rank version, printing residual before every ALS sweep")
-        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test)
+        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test)
