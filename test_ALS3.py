@@ -9,6 +9,109 @@ import standard_ALS3 as stnd_ALS
 import sliced_ALS3 as slic_ALS
 import synthetic_tensors as stsrs
 
+import os
+import argparse
+import csv
+from pathlib import Path
+from os.path import dirname, join
+
+parent_dir = dirname(__file__)
+results_dir = join(parent_dir, 'results')
+
+def add_general_arguments(parser):
+
+    parser.add_argument(
+        '--experiment-prefix',
+        '-ep',
+        type=str,
+        default='',
+        required=False,
+        metavar='str',
+        help='Output csv file name prefix (default: None)')
+    parser.add_argument(
+        '--s',
+        type=int,
+        default=64,
+        metavar='int',
+        help='Input tensor size in each dimension (default: 64)')
+    parser.add_argument(
+        '--R',
+        type=int,
+        default=10,
+        metavar='int',
+        help='Input CP decomposition rank (default: 10)')
+    parser.add_argument(
+        '--r',
+        type=int,
+        default=10,
+        metavar='int',
+        help='Update rank size (default: 10)')
+    parser.add_argument(
+        '--num-iter',
+        type=int,
+        default=10,
+        metavar='int',
+        help='Number of iterations (default: 10)')
+    parser.add_argument(
+        '--num-lowr-init-iter',
+        type=int,
+        default=2,
+        metavar='int',
+        help='Number of initializing iterations (default: 2)')
+    parser.add_argument(
+        '--sp-fraction',
+        type=float,
+        default=1.,
+        metavar='float',
+        help='sparsity (default: 1)')
+    parser.add_argument(
+        '--sp-updatelowrank',
+        type=int,
+        default=0,
+        metavar='int',
+        help='mem-preserving ordering of low-rank sparse contractions (default: 0)')
+    parser.add_argument(
+        '--sp-res',
+        type=int,
+        default=0,
+        metavar='int',
+        help='TTTP-based sparse residual calculation (default: 0)')
+    parser.add_argument(
+        '--run-naive',
+        type=int,
+        default=1,
+        metavar='int',
+        help='Run naive Dimension tree algorithm (default: 1)')
+    parser.add_argument(
+        '--run-lowrank',
+        type=int,
+        default=0,
+        metavar='int',
+        help='Run Dimension tree algorithm with low rank update (default: 0)')
+    parser.add_argument(
+        '--mm-test',
+        type=int,
+        default=0,
+        metavar='int',
+        help='decompose matrix multiplication tensor as opposed to random (default: 0)')
+    parser.add_argument(
+        '--pois-test',
+        type=int,
+        default=0,
+        metavar='int',
+        help='decompose Poisson tensor as opposed to random (default: 0)')
+    parser.add_argument(
+        '--num-slices',
+        type=int,
+        default=1,
+        metavar='int',
+        help='if greater than one do sliced standard ALS with this many slices (default: 1)')
+
+def get_file_prefix(args):
+        return "-".join(filter(None, [
+            args.model_prefix, args.dataset, args.network, 'LR' + str(args.lr)
+        ]))
+
 def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
@@ -131,61 +234,31 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
 
 
 if __name__ == "__main__":
-    w = ctf.comm()
-    s = 64
-    R = 10
-    r = 10
-    num_iter = 10
-    num_lowr_init_iter = 2
-    sp_frac = 1.
-    sp_ul = 0
-    sp_res = 0
-    run_naive = 1
-    run_lowr = 1
-    run_lowr = 1
-    mm_test = 0
-    num_slices = 1
-    pois_test = 0
-    if len(sys.argv) >= 4:
-        s = int(sys.argv[1])
-        R = int(sys.argv[2])
-        r = int(sys.argv[3])
-    if len(sys.argv) >= 5:
-        num_iter = int(sys.argv[4])
-    if len(sys.argv) >= 6:
-        num_lowr_init_iter = int(sys.argv[5])
-    if len(sys.argv) >= 7:
-        sp_frac  = np.float64(sys.argv[6])
-    if len(sys.argv) >= 8:
-        sp_ul  = int(sys.argv[7])
-    if len(sys.argv) >= 9:
-        sp_res  = int(sys.argv[8])
-    if len(sys.argv) >= 10:
-        run_naive = int(sys.argv[9])
-    if len(sys.argv) >= 11:
-        run_lowr = int(sys.argv[10])
-    if len(sys.argv) >= 12:
-        mm_test = int(sys.argv[11])
-    if len(sys.argv) >= 13:
-        pois_test = int(sys.argv[12])
-    if len(sys.argv) >= 14:
-        num_slices = int(sys.argv[13])
 
-    if ctf.comm().rank() == 0:
-        #print("Arguments to exe are (s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,run_naive,run_lowr,mm_test), default is (",40,10,10,10,2,1.,1,0,1,1,1,")provided", sys.argv)
-        print("s =",s)
-        print("R =",R)
-        print("r =",r)
-        print("num_iter =",num_iter)
-        print("num_lowr_init_iter =",num_lowr_init_iter)
-        print("sp_frac =",sp_frac)
-        print("sp_ul (mem-preserving ordering of low-rank sparse contractions) =",sp_ul)
-        print("sp_res (TTTP-based sparse residual calculation) =",sp_res)
-        print("run_naive =",run_naive)
-        print("run_lowr =",run_lowr)
-        print("mm_test (decompose matrix multiplication tensor as opposed to random) =",mm_test)
-        print("pois_test (decompose Poisson tensor as opposed to random) =",pois_test)
-        print("num_slices (if greater than one do sliced standard ALS with this many slices) =",num_slices)
+    parser = argparse.ArgumentParser()
+    add_general_arguments(parser)
+    args, _ = parser.parse_known_args()
+
+    w = ctf.comm()
+
+    if w.rank() == 0 :
+        for arg in vars(args) :
+            print( arg, ':', getattr(args, arg))
+
+    s = args.s
+    R = args.R
+    r = args.r
+    num_iter = args.num_iter
+    num_lowr_init_iter = args.num_lowr_init_iter
+    sp_frac = args.sp_fraction
+    sp_ul = args.sp_updatelowrank
+    sp_res = args.sp_res
+    run_naive = args.run_naive
+    run_lowr = args.run_lowrank
+    mm_test = args.mm_test
+    num_slices = args.num_slices
+    pois_test = args.pois_test
+
     if run_naive:
         if num_slices == 1:
             if ctf.comm().rank() == 0:
