@@ -109,10 +109,18 @@ def add_general_arguments(parser):
 
 def get_file_prefix(args):
         return "-".join(filter(None, [
-            args.model_prefix, args.dataset, args.network, 'LR' + str(args.lr)
+            args.experiment_prefix, 
+            's' + str(args.s),
+            'R' + str(args.R),
+            'r' + str(args.r),
+            'spfrac' + str(args.sp_fraction),
+            'splowrank' + str(args.sp_updatelowrank),
+            'runlowrank' + str(args.run_lowrank),
+            'pois' + str(args.pois_test),
+            'numslices' + str(args.num_slices),
         ]))
 
-def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False):
+def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,csv_writer=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
     else:
@@ -127,6 +135,10 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False):
             res = cak.get_residual(T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
+            # write to csv file
+            csv_writer.writerow([
+                i, time_all, res
+            ])
         t0 = time.time()
         [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C)
         t1 = time.time()
@@ -136,7 +148,7 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False):
     if ctf.comm().rank() == 0:
         print("Naive method took",time_all,"seconds overall")
 
-def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False):
+def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,csv_writer=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
     else:
@@ -161,6 +173,10 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False):
             res = cak.get_residual(T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
+            # write to csv file
+            csv_writer.writerow([
+                i, time_all, res
+            ])
         t0 = time.time()
         [A,B,C] = slic_ALS.sliced_ALS_step(Ta,Tb,Tc,A,B,C)
         t1 = time.time()
@@ -171,12 +187,13 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False):
         print("Naive method took",time_all,"seconds overall")
 
 
-def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False):
+def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,csv_writer=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
     else:
         [A,B,C,T,O] = stsrs.init_rand(s,R,sp_frac)
     time_init = 0.
+
     for i in range(num_lowr_init_iter):
         if sp_res:
             res = cak.get_residual_sp(O,T,A,B,C)
@@ -184,6 +201,10 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             res = cak.get_residual(T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
+            # write to csv file
+            csv_writer.writerow([
+                i, time_init, res
+            ])
         t0 = time.time()
         [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C)
         t1 = time.time()
@@ -193,6 +214,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         if ctf.comm().rank() == 0:
             print ("Total time is ", time_init)
     time_lowr = time.time()
+
     if num_lowr_init_iter == 0:
         if ctf.comm().rank() == 0:
             print("Initializing leaves from low rank factor matrices")
@@ -210,6 +232,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             print("Done initializing leaves from low rank factor matrices")
     else:
         [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves(T,A,B,C)
+
     time_lowr = time.time() - time_lowr
     for i in range(num_iter-num_lowr_init_iter):
         if sp_res:
@@ -218,6 +241,10 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             res = cak.get_residual(T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
+            # write to csv file
+            csv_writer.writerow([
+                i+num_lowr_init_iter, time_init+time_lowr, res
+            ])
         t0 = time.time()
         if sp_ul:
             [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,"update_leaves_sp")
@@ -239,11 +266,25 @@ if __name__ == "__main__":
     add_general_arguments(parser)
     args, _ = parser.parse_known_args()
 
+    # Set up CSV logging
+    csv_path = join(results_dir, get_file_prefix(args)+'.csv')
+    is_new_log = not Path(csv_path).exists()
+    csv_file = open(csv_path, 'a')#, newline='')
+    csv_writer = csv.writer(
+        csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
     w = ctf.comm()
 
     if w.rank() == 0 :
+        # print the arguments
         for arg in vars(args) :
             print( arg, ':', getattr(args, arg))
+        # initialize the csv file
+        if is_new_log:
+            csv_writer.writerow([
+                'iterations', 'time', 'residual'
+            ])
+
 
     s = args.s
     R = args.R
@@ -263,12 +304,12 @@ if __name__ == "__main__":
         if num_slices == 1:
             if ctf.comm().rank() == 0:
                 print("Testing naive version, printing residual before every ALS sweep")
-            test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test,pois_test)
+            test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test,pois_test,csv_writer)
         else:
             if ctf.comm().rank() == 0:
                 print("Testing sliced version, printing residual before every ALS sweep")
-            test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test,pois_test)
+            test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test,pois_test,csv_writer)
     if run_lowr:
         if ctf.comm().rank() == 0:
             print("Testing low rank version, printing residual before every ALS sweep")
-        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test)
+        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer)
