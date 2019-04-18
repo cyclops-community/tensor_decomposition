@@ -1,5 +1,10 @@
 # Lowrank-ALS
 
+Run
+```
+pip install -r requirements.txt
+```
+to install necessary packages. 
 
 Run 
 
