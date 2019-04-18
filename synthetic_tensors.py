@@ -42,10 +42,10 @@ def init_poisson(s,R):
     T = ctf.tensor((sr,sr,sr,sr,sr,sr),sp=True)
     A = (-2.)*ctf.eye(sr,sr,sp=True) + ctf.eye(sr,sr,1,sp=True) + ctf.eye(sr,sr,-1,sp=True)
     I = ctf.eye(sr,sr,sp=True) # sparse identity matrix
-    #T.i("aixbjy") << A.i("ab")*I.i("ij")*I.i("xy") + I.i("ab")*A.i("ij")*I.i("xy") + I.i("ab")*I.i("ij")*A.i("xy")
-    T.i("abijxy") << A.i("ab")*I.i("ij")*I.i("xy") + I.i("ab")*A.i("ij")*I.i("xy") + I.i("ab")*I.i("ij")*A.i("xy")
+    T.i("aixbjy") << A.i("ab")*I.i("ij")*I.i("xy") + I.i("ab")*A.i("ij")*I.i("xy") + I.i("ab")*I.i("ij")*A.i("xy")
+    # T.i("abijxy") << A.i("ab")*I.i("ij")*I.i("xy") + I.i("ab")*A.i("ij")*I.i("xy") + I.i("ab")*I.i("ij")*A.i("xy")
     N = ctf.tensor((s,s,s),sp=True)
-    N.fill_sp_random(-0.0001,.0001,1./s)
+    N.fill_sp_random(-0.000,.000,1./s)
     T = T.reshape((s,s,s)) + N
     [inds, vals] = T.read_local()
     vals[:] = 1.

@@ -123,10 +123,10 @@ def get_file_prefix(args):
 def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,csv_writer=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
+    elif pois_test == True:
+        [A,B,C,T,O] = stsrs.init_poisson(s,R)
     else:
         [A,B,C,T,O] = stsrs.init_rand(s,R,sp_frac)
-    if pois_test == True:
-        [A,B,C,T,O] = stsrs.init_poisson(s,R)
     time_all = 0.
     for i in range(num_iter):
         if sp_res:
@@ -148,9 +148,11 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,cs
     if ctf.comm().rank() == 0:
         print("Naive method took",time_all,"seconds overall")
 
-def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,csv_writer=None):
+def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_test=False,csv_writer=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
+    elif pois_test == True:
+        [A,B,C,T,O] = stsrs.init_poisson(s,R)
     else:
         [A,B,C,T,O] = stsrs.init_rand(s,R,sp_frac)
     time_all = 0.
@@ -187,9 +189,11 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,csv_wr
         print("Naive method took",time_all,"seconds overall")
 
 
-def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,csv_writer=None):
+def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
+    elif pois_test == True:
+        [A,B,C,T,O] = stsrs.init_poisson(s,R)
     else:
         [A,B,C,T,O] = stsrs.init_rand(s,R,sp_frac)
     time_init = 0.
@@ -278,7 +282,7 @@ if __name__ == "__main__":
     if w.rank() == 0 :
         # print the arguments
         for arg in vars(args) :
-            print( arg, ':', getattr(args, arg))
+            print( arg+':', getattr(args, arg))
         # initialize the csv file
         if is_new_log:
             csv_writer.writerow([
