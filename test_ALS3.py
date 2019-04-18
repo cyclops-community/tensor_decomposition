@@ -65,6 +65,12 @@ def add_general_arguments(parser):
         metavar='float',
         help='sparsity (default: 1)')
     parser.add_argument(
+        '--regularization',
+        type=float,
+        default=0.1,
+        metavar='float',
+        help='regularization (default: 0.1)')
+    parser.add_argument(
         '--sp-updatelowrank',
         type=int,
         default=0,
@@ -118,9 +124,11 @@ def get_file_prefix(args):
             'runlowrank' + str(args.run_lowrank),
             'pois' + str(args.pois_test),
             'numslices' + str(args.num_slices),
+            'numinit-iter' + str(args.num_lowr_init_iter),
+            'regu' + str(args.regularization),
         ]))
 
-def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,csv_writer=None):
+def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
     elif pois_test == True:
@@ -140,7 +148,7 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,cs
                 i, time_all, res
             ])
         t0 = time.time()
-        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C)
+        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Sweep took", t1-t0,"seconds")
@@ -148,7 +156,7 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,cs
     if ctf.comm().rank() == 0:
         print("Naive method took",time_all,"seconds overall")
 
-def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_test=False,csv_writer=None):
+def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
     elif pois_test == True:
@@ -180,7 +188,7 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_t
                 i, time_all, res
             ])
         t0 = time.time()
-        [A,B,C] = slic_ALS.sliced_ALS_step(Ta,Tb,Tc,A,B,C)
+        [A,B,C] = slic_ALS.sliced_ALS_step(Ta,Tb,Tc,A,B,C,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Sweep took", t1-t0,"seconds")
@@ -189,7 +197,7 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_t
         print("Naive method took",time_all,"seconds overall")
 
 
-def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None):
+def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
     elif pois_test == True:
@@ -210,7 +218,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
                 i, time_init, res
             ])
         t0 = time.time()
-        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C)
+        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Full-rank sweep took", t1-t0,"seconds, iteration ",i)
@@ -251,9 +259,9 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             ])
         t0 = time.time()
         if sp_ul:
-            [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,"update_leaves_sp")
+            [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,"update_leaves_sp")
         else:
-            [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r)
+            [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
@@ -304,16 +312,18 @@ if __name__ == "__main__":
     num_slices = args.num_slices
     pois_test = args.pois_test
 
+    Regu = args.regularization * ctf.eye(R,R)
+
     if run_naive:
         if num_slices == 1:
             if ctf.comm().rank() == 0:
                 print("Testing naive version, printing residual before every ALS sweep")
-            test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test,pois_test,csv_writer)
+            test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test,pois_test,csv_writer,Regu)
         else:
             if ctf.comm().rank() == 0:
                 print("Testing sliced version, printing residual before every ALS sweep")
-            test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test,pois_test,csv_writer)
+            test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test,pois_test,csv_writer,Regu)
     if run_lowr:
         if ctf.comm().rank() == 0:
             print("Testing low rank version, printing residual before every ALS sweep")
-        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer)
+        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu)

@@ -4,8 +4,8 @@ from ctf import random
 import sys
 import time
 
-def compute_lin_sys(X, Y):
-    return ctf.dot(X.T(), X) * ctf.dot(Y.T(), Y)
+def compute_lin_sys(X, Y, Regu):
+    return ctf.dot(X.T(), X) * ctf.dot(Y.T(), Y) + Regu
 
 def solve_sys_svd(G, RHS):
     t0 = time.time()

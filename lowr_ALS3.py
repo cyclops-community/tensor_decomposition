@@ -97,8 +97,8 @@ def update_leaves_sp_C(T,A,B,C1,C2):
     return [URHS_A,URHS_B]
 
 
-def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,ul="update_leaves"):
-    G = cak.compute_lin_sys(B,C)
+def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul="update_leaves"):
+    G = cak.compute_lin_sys(B,C,Regu)
     ERHS_A = RHS_A - ctf.dot(A, G)
     [A1,A2] = solve_sys_lowr(G, ERHS_A, r)
     A += ctf.dot(A1, A2)
@@ -106,7 +106,7 @@ def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,ul="update_leaves"):
     RHS_B += URHS_B
     RHS_C += URHS_C
 
-    G = cak.compute_lin_sys(A,C)
+    G = cak.compute_lin_sys(A,C,Regu)
     ERHS_B = RHS_B - ctf.dot(B, G)
     [B1,B2] = solve_sys_lowr(G, ERHS_B, r)
     B += ctf.dot(B1, B2)
@@ -114,7 +114,7 @@ def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,ul="update_leaves"):
     RHS_A += URHS_A
     RHS_C += URHS_C
 
-    G = cak.compute_lin_sys(A,B)
+    G = cak.compute_lin_sys(A,B,Regu)
     ERHS_C = RHS_C - ctf.dot(C, G)
     [C1,C2] = solve_sys_lowr(G, ERHS_C, r)
     C += ctf.dot(C1, C2)
