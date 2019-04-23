@@ -31,6 +31,10 @@ def solve_sys_lowr(G, RHS, r):
     #return [X[:,-r:], VT[-r:,:]]
 
 def build_leaves(T,A,B,C):
+    [A,_] = cak.norm_cols(A)
+    [B,_] = cak.norm_cols(B)
+    [C,_] = cak.norm_cols(C)
+
     TC = ctf.einsum("ijk,ka->ija",T,C)
     RHS_A = ctf.einsum("ija,ja->ia",TC,B)
     RHS_B = ctf.einsum("ija,ia->ja",TC,A)
@@ -98,29 +102,42 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 
 
 def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul="update_leaves"):
+    [A,_] = cak.norm_cols(A)
+    [B,_] = cak.norm_cols(B)
+    [C,_] = cak.norm_cols(C)
+
     G = cak.compute_lin_sys(B,C,Regu)
     ERHS_A = RHS_A - ctf.dot(A, G)
     [A1,A2] = solve_sys_lowr(G, ERHS_A, r)
     A += ctf.dot(A1, A2)
+    [A,z] = cak.norm_cols(A)
     [URHS_B,URHS_C] = globals()[ul+"_A"](T,A1,A2,B,C)
     RHS_B += URHS_B
+    RHS_B = RHS_B/z
     RHS_C += URHS_C
+    RHS_C = RHS_C/z
 
     G = cak.compute_lin_sys(A,C,Regu)
     ERHS_B = RHS_B - ctf.dot(B, G)
     [B1,B2] = solve_sys_lowr(G, ERHS_B, r)
     B += ctf.dot(B1, B2)
+    [B,z] = cak.norm_cols(B)
     [URHS_A,URHS_C] = globals()[ul+"_B"](T,A,B1,B2,C)
     RHS_A += URHS_A
+    RHS_A = RHS_A/z
     RHS_C += URHS_C
+    RHS_C = RHS_C/z
 
     G = cak.compute_lin_sys(A,B,Regu)
     ERHS_C = RHS_C - ctf.dot(C, G)
     [C1,C2] = solve_sys_lowr(G, ERHS_C, r)
     C += ctf.dot(C1, C2)
+    [_,z] = cak.norm_cols(C)
     [URHS_A,URHS_B] = globals()[ul+"_C"](T,A,B,C1,C2)
     RHS_A += URHS_A
+    RHS_A = RHS_A/z
     RHS_B += URHS_B
+    RHS_B = RHS_B/z
 
     return [A,B,C,RHS_A,RHS_B,RHS_C]
 
