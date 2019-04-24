@@ -6,10 +6,6 @@ import time
 import common_ALS3_kernels as cak
 
 def sliced_ALS_step(Ta,Tb,Tc,A,B,C,Regu):
-    [A,_] = cak.norm_cols(A)
-    [B,_] = cak.norm_cols(B)
-    [C,_] = cak.norm_cols(C)
-
     L = ctf.cholesky(cak.compute_lin_sys(B,C,Regu))
     i_st = 0
     i_end = 0
@@ -19,7 +15,6 @@ def sliced_ALS_step(Ta,Tb,Tc,A,B,C,Regu):
       RHS = ctf.einsum("ijk,ja,ka->ia",Ta[i],B,C)
       X = ctf.solve_tri(L, RHS, True, False, True)
       A[i_st:i_end,:] = ctf.solve_tri(L, X, True, False, False)
-    [A,_] = cak.norm_cols(A)
 
     L = ctf.cholesky(cak.compute_lin_sys(A,C,Regu))
     j_st = 0
@@ -30,7 +25,6 @@ def sliced_ALS_step(Ta,Tb,Tc,A,B,C,Regu):
       RHS = ctf.einsum("ijk,ia,ka->ja",Tb[i],A,C)
       X = ctf.solve_tri(L, RHS, True, False, True)
       B[j_st:j_end,:] = ctf.solve_tri(L, X, True, False, False)
-    [B,_] = cak.norm_cols(B)
 
     L = ctf.cholesky(cak.compute_lin_sys(A,B,Regu))
     k_st = 0
