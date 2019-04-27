@@ -30,6 +30,30 @@ def solve_sys_lowr(G, RHS, r):
     return [xU,xVT]
     #return [X[:,-r:], VT[-r:,:]]
 
+def solve_sys_lowr_sp(fG, fRHS, r):
+    R = fRHS.shape[1]
+    spvec = ctf.tensor((R),dtype=int)
+    spvec.fill_sp_random(1,1,np.float32(r)/R)
+    [inds,vals] = spvec.read_all_nnz()
+    vals = np.cumsum(vals)
+    rr = vals[-1]
+    vals[:] -= 1
+    VT = ctf.zeros((rr,R))
+    iinds = np.zeros((len(vals),2))
+    iinds[:,0] = vals
+    iinds[:,1] = inds
+    if ctf.comm().rank() == 0:
+        VT.write(iinds,np.ones(len(vals)))
+    else:
+        VT.write()
+    RHS = ctf.einsum("ik,jk->ij",fRHS,VT)
+    G = ctf.einsum("ik,kl,jl->ij",VT,fG,VT)
+    L = ctf.cholesky(G)
+    X = ctf.solve_tri(L, RHS, True, False, True)
+    U = ctf.solve_tri(L, X, True, False, False)
+    return [U,VT]
+
+
 def build_leaves(T,A,B,C):
     TC = ctf.einsum("ijk,ka->ija",T,C)
     RHS_A = ctf.einsum("ija,ja->ia",TC,B)
@@ -97,10 +121,10 @@ def update_leaves_sp_C(T,A,B,C1,C2):
     return [URHS_A,URHS_B]
 
 
-def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul="update_leaves"):
+def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul,uf):
     G = cak.compute_lin_sys(B,C,Regu)
     ERHS_A = RHS_A - ctf.dot(A, G)
-    [A1,A2] = solve_sys_lowr(G, ERHS_A, r)
+    [A1,A2] = globals()[uf](G, ERHS_A, r)
     A += ctf.dot(A1, A2)
     [URHS_B,URHS_C] = globals()[ul+"_A"](T,A1,A2,B,C)
     RHS_B += URHS_B
@@ -108,7 +132,7 @@ def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul="update_leaves"):
 
     G = cak.compute_lin_sys(A,C,Regu)
     ERHS_B = RHS_B - ctf.dot(B, G)
-    [B1,B2] = solve_sys_lowr(G, ERHS_B, r)
+    [B1,B2] = globals()[uf](G, ERHS_B, r)
     B += ctf.dot(B1, B2)
     [URHS_A,URHS_C] = globals()[ul+"_B"](T,A,B1,B2,C)
     RHS_A += URHS_A
@@ -116,7 +140,7 @@ def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul="update_leaves"):
 
     G = cak.compute_lin_sys(A,B,Regu)
     ERHS_C = RHS_C - ctf.dot(C, G)
-    [C1,C2] = solve_sys_lowr(G, ERHS_C, r)
+    [C1,C2] = globals()[uf](G, ERHS_C, r)
     C += ctf.dot(C1, C2)
     [URHS_A,URHS_B] = globals()[ul+"_C"](T,A,B,C1,C2)
     RHS_A += URHS_A

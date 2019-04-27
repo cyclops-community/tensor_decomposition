@@ -112,6 +112,13 @@ def add_general_arguments(parser):
         default=1,
         metavar='int',
         help='if greater than one do sliced standard ALS with this many slices (default: 1)')
+    parser.add_argument(
+        '--sp-update-factor',
+        type=int,
+        default=0,
+        metavar='int',
+        help='use a sparse right factor in the low rank update scheme (default: 0)')
+
 
 def get_file_prefix(args):
         return "-".join(filter(None, [
@@ -197,7 +204,7 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_t
         print("Naive method took",time_all,"seconds overall")
 
 
-def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
+def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None,sp_update_factor=False):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(s,R)
     elif pois_test == True:
@@ -258,10 +265,13 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
                 i+num_lowr_init_iter, time_init+time_lowr, res
             ])
         t0 = time.time()
-        if sp_ul:
-            [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,"update_leaves_sp")
-        else:
-            [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu)
+        symb_uls = "update_leaves"
+        if sp_ul == True:
+              symb_uls = "update_leaves_sp"
+        symb_uf = "solve_sys_lowr"
+        if sp_update_factor == True:
+              symb_uf = "solve_sys_lowr_sp"
+        [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,symb_uls,symb_uf)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
@@ -311,6 +321,7 @@ if __name__ == "__main__":
     mm_test = args.mm_test
     num_slices = args.num_slices
     pois_test = args.pois_test
+    sp_update_factor = args.sp_update_factor
 
     Regu = args.regularization * ctf.eye(R,R)
 
@@ -326,4 +337,4 @@ if __name__ == "__main__":
     if run_lowr:
         if ctf.comm().rank() == 0:
             print("Testing low rank version, printing residual before every ALS sweep")
-        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu)
+        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu,sp_update_factor)
