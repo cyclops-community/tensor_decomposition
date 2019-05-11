@@ -4,7 +4,24 @@ from ctf import random
 import sys
 import time
 
-def init_rand(s,R,sp_frac=1.):
+def init_rand(order,s,R,sp_frac=1.):
+    A = []
+    for i in range(order):
+        A.append(ctf.random.random((s,R)))
+    if sp_frac<1.:
+        O = ctf.tensor([s]*order,sp=True)
+        O.fill_sp_random(1.,1.,sp_frac)
+        T = ctf.TTTP(O,A)
+    else:
+        T = ctf.ones([s]*order)
+        T = ctf.TTTP(T,A)
+        O = None
+    A = []
+    for i in range(order):
+        A.append(ctf.random.random((s,R)))
+    return [A,T,O]
+
+def init_rand3(s,R,sp_frac=1.):
     A = ctf.random.random((s,R))
     B = ctf.random.random((s,R))
     C = ctf.random.random((s,R))

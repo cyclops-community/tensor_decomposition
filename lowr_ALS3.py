@@ -3,7 +3,7 @@ import ctf
 from ctf import random
 import sys
 import time
-import common_ALS3_kernels as cak
+import common_kernels as ck
 
 def solve_sys_lowr_svd(G, RHS, r):
     t0 = time.time()
@@ -122,7 +122,7 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 
 
 def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul,uf):
-    G = cak.compute_lin_sys(B,C,Regu)
+    G = ck.compute_lin_sys(B,C,Regu)
     ERHS_A = RHS_A - ctf.dot(A, G)
     [A1,A2] = globals()[uf](G, ERHS_A, r)
     A += ctf.dot(A1, A2)
@@ -130,7 +130,7 @@ def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul,uf):
     RHS_B += URHS_B
     RHS_C += URHS_C
 
-    G = cak.compute_lin_sys(A,C,Regu)
+    G = ck.compute_lin_sys(A,C,Regu)
     ERHS_B = RHS_B - ctf.dot(B, G)
     [B1,B2] = globals()[uf](G, ERHS_B, r)
     B += ctf.dot(B1, B2)
@@ -138,7 +138,7 @@ def lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul,uf):
     RHS_A += URHS_A
     RHS_C += URHS_C
 
-    G = cak.compute_lin_sys(A,B,Regu)
+    G = ck.compute_lin_sys(A,B,Regu)
     ERHS_C = RHS_C - ctf.dot(C, G)
     [C1,C2] = globals()[uf](G, ERHS_C, r)
     C += ctf.dot(C1, C2)

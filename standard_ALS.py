@@ -2,7 +2,7 @@ import numpy as np
 import queue
 import ctf
 from ctf import random
-import common_ALS3_kernels as cak
+import common_kernels as ck
 
 
 def dt_ALS_step(T,A,Regu):
@@ -33,6 +33,6 @@ def dt_ALS_step(T,A,Regu):
             ss = s[-1][0].copy()
             ss.remove(ii)
             s.append((ss,N))
-        A[i] = cak.solve_sys(cak.compute_lin_sysN(A,i,Regu), s[-1][1])
+        A[i] = ck.solve_sys(ck.compute_lin_sysN(A,i,Regu), s[-1][1])
     return A
 

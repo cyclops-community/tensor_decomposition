@@ -3,10 +3,10 @@ import ctf
 from ctf import random
 import sys
 import time
-import common_ALS3_kernels as cak
+import common_kernels as ck
 
 def sliced_ALS_step(Ta,Tb,Tc,A,B,C,Regu):
-    L = ctf.cholesky(cak.compute_lin_sys(B,C,Regu))
+    L = ctf.cholesky(ck.compute_lin_sys(B,C,Regu))
     i_st = 0
     i_end = 0
     for i in range(len(Ta)):
@@ -16,7 +16,7 @@ def sliced_ALS_step(Ta,Tb,Tc,A,B,C,Regu):
       X = ctf.solve_tri(L, RHS, True, False, True)
       A[i_st:i_end,:] = ctf.solve_tri(L, X, True, False, False)
 
-    L = ctf.cholesky(cak.compute_lin_sys(A,C,Regu))
+    L = ctf.cholesky(ck.compute_lin_sys(A,C,Regu))
     j_st = 0
     j_end = 0
     for i in range(len(Tb)):
@@ -26,7 +26,7 @@ def sliced_ALS_step(Ta,Tb,Tc,A,B,C,Regu):
       X = ctf.solve_tri(L, RHS, True, False, True)
       B[j_st:j_end,:] = ctf.solve_tri(L, X, True, False, False)
 
-    L = ctf.cholesky(cak.compute_lin_sys(A,B,Regu))
+    L = ctf.cholesky(ck.compute_lin_sys(A,B,Regu))
     k_st = 0
     k_end = 0
     for i in range(len(Tc)):
