@@ -60,7 +60,6 @@ def get_residual_sp3(O,T,A,B,C):
 def get_residual(T,A):
     t0 = time.time()
     V = ctf.ones(T.shape)
-    print(V.shape,len(A))
     nrm = ctf.vecnorm(T-ctf.TTTP(V,A))
     t1 = time.time()
     if ctf.comm().rank() == 0:
