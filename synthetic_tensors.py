@@ -16,10 +16,7 @@ def init_rand(order,s,R,sp_frac=1.):
         T = ctf.ones([s]*order)
         T = ctf.TTTP(T,A)
         O = None
-    A = []
-    for i in range(order):
-        A.append(ctf.random.random((s,R)))
-    return [A,T,O]
+    return [T,O]
 
 def init_rand3(s,R,sp_frac=1.):
     A = ctf.random.random((s,R))
@@ -72,3 +69,47 @@ def init_poisson(s,R):
     B = ctf.random.random((s,R))
     C = ctf.random.random((s,R))
     return [A,B,C,T,O]
+
+def init_mom_cons(k):
+    order = 4
+    mode_weights = [1, 1, -1, -1]
+    
+    delta = ctf.tensor(k*np.ones(order))
+    [inds,vals] = delta.read_local()
+    new_inds = []
+    for i in range(len(inds)):
+        kval = 0
+        ind = inds[i]
+        iinds = []
+        for j in range(order):
+            ind_i = ind % k
+            iinds.append(ind_i)
+            ind   = ind // k
+            kval += mode_weights[-j]*ind_i
+        if kval % k == 0:
+            new_inds.append(inds[i])
+    delta.write(new_inds, np.ones(len(new_inds)))
+    return delta
+
+
+def init_mom_cons_sv(k):
+    order = 4
+    mode_weights = [1, 1, -1, -1]
+    
+    delta = ctf.tensor(k*np.ones(order))
+    [inds,vals] = delta.read_local()
+    new_inds = []
+    for i in range(len(inds)):
+        kval = 0
+        ind = inds[i]
+        iinds = []
+        for j in range(order):
+            ind_i = ind % k
+            iinds.append(ind_i)
+            ind   = ind // k
+            kval += mode_weights[-j]*ind_i
+        if kval % k == 0:
+            new_inds.append(inds[i])
+    delta.write(new_inds, np.ones(len(new_inds)))
+    [U,S,VT]=delta.i("ijkl").svd("ija","akl",threshold=1.e-3)
+    return U

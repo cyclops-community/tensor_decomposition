@@ -5,7 +5,7 @@ import sys
 import time
 import common_kernels as ck
 import lowr_ALS3 as lowr_ALS
-import standard_ALS as stnd_ALS
+import standard_ALS3 as stnd_ALS
 import sliced_ALS3 as slic_ALS
 import synthetic_tensors as stsrs
 import argparse
@@ -38,7 +38,7 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,cs
                 i, time_all, res
             ])
         t0 = time.time()
-        [A,B,C] = stnd_ALS.dt_ALS_step(T,[A,B,C],Regu)
+        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Sweep took", t1-t0,"seconds")
@@ -108,7 +108,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
                 i, time_init, res
             ])
         t0 = time.time()
-        [A,B,C] = stnd_ALS.dt_ALS_step(T,[A,B,C],Regu)
+        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Full-rank sweep took", t1-t0,"seconds, iteration ",i)

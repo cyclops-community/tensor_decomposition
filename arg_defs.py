@@ -53,9 +53,9 @@ def add_general_arguments(parser):
     parser.add_argument(
         '--regularization',
         type=float,
-        default=0.1,
+        default=0.0000001,
         metavar='float',
-        help='regularization (default: 0.1)')
+        help='regularization (default: 0.0000001)')
     parser.add_argument(
         '--sp-updatelowrank',
         type=int,
@@ -104,6 +104,12 @@ def add_general_arguments(parser):
         default=0,
         metavar='int',
         help='use a sparse right factor in the low rank update scheme (default: 0)')
+    parser.add_argument(
+        '--tensor',
+        default="random",
+        metavar='string',
+        help='choose tensor to test, available: random, mom_cons, and mom_cons_sv (default: random)')
+
 
 
 def get_file_prefix(args):

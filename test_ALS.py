@@ -18,8 +18,7 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def test_rand_naive(order,s,R,num_iter,sp_frac,sp_res,csv_writer=None,Regu=None):
-    [A,T,O] = stsrs.init_rand(order,s,R,sp_frac)
+def test_rand_naive(A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
     time_all = 0.
     for i in range(num_iter):
         if sp_res:
@@ -76,6 +75,29 @@ if __name__ == "__main__":
     sp_frac = args.sp_fraction
     sp_res = args.sp_res
     Regu = args.regularization * ctf.eye(R,R)
+    tensor = args.tensor
 
-    test_rand_naive(order,s,R,num_iter,sp_frac,sp_res,csv_writer,Regu)
+    if tensor == "random":
+        if w.rank() == 0 :
+            print("Testing random tensor")
+        [T,O] = stsrs.init_rand(order,s,R,sp_frac)
+    elif tensor == "mom_cons":
+        if w.rank() == 0 :
+            print("Testing order 4 momentum conservation tensor")
+        T = stsrs.init_mom_cons(s)
+        O = None
+        sp_res = False
+    elif tensor == "mom_cons_sv":
+        if w.rank() == 0 :
+            print("Testing order 3 singular vectors of unfolding of momentum conservation tensor")
+        T = stsrs.init_mom_cons_sv(s)
+        O = None
+        sp_res = False
+    else:
+        print("ERROR: Invalid --tensor input")
+
+    A = []
+    for i in range(T.ndim):
+        A.append(ctf.random.random((T.shape[i],R)))
+    test_rand_naive(A,T,O,num_iter,sp_res,csv_writer,Regu)
 
