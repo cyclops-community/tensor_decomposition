@@ -4,6 +4,17 @@ from ctf import random
 import sys
 import time
 
+def compute_lin_sysN(A,i,Regu):
+    S = None
+    for j in range(len(A)):
+        if j != i:
+            if S is None:
+                S =  ctf.dot(A[j].T(), A[j])
+            else:
+                S *= ctf.dot(A[j].T(), A[j])
+    S += Regu
+    return S
+
 def compute_lin_sys(X, Y, Regu):
     return ctf.dot(X.T(), X) * ctf.dot(Y.T(), Y) + Regu
 
