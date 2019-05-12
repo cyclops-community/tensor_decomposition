@@ -1,5 +1,8 @@
 # Lowrank-ALS
 
+### Note:
+Currectly the code is only tested under Python3. 
+
 Run
 ```
 pip install -r requirements.txt

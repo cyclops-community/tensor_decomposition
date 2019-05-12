@@ -3,11 +3,11 @@ import ctf
 from ctf import random
 import sys
 import time
-import common_kernels as ck
-import lowr_ALS3 as lowr_ALS
-import standard_ALS3 as stnd_ALS
-import sliced_ALS3 as slic_ALS
-import synthetic_tensors as stsrs
+import CPD.common_kernels as ck
+import CPD.lowr_ALS3 as lowr_ALS
+import CPD.standard_ALS3 as stnd_ALS
+import CPD.sliced_ALS3 as slic_ALS
+import tensors.synthetic_tensors as stsrs
 import argparse
 import arg_defs as arg_defs
 import csv
