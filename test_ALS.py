@@ -20,6 +20,8 @@ results_dir = join(parent_dir, 'results')
 
 def test_rand_naive(A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
     time_all = 0.
+    optimizer = stnd_ALS.DTALS_Optimizer()
+
     for i in range(num_iter):
         if sp_res:
             res = ck.get_residual_sp(O,T,A)
@@ -32,7 +34,7 @@ def test_rand_naive(A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
                 i, time_all, res
             ])
         t0 = time.time()
-        A = stnd_ALS.dt_ALS_step(T,A,Regu)
+        A = optimizer.step(T,A,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Sweep took", t1-t0,"seconds")
