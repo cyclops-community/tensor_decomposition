@@ -8,9 +8,9 @@ import argparse
 import csv
 from pathlib import Path
 from os.path import dirname, join
-import common_kernels as ck
-import standard_ALS as stnd_ALS
-import synthetic_tensors as stsrs
+import CPD.common_kernels as ck
+import CPD.standard_ALS as stnd_ALS
+import tensors.synthetic_tensors as stsrs
 import argparse
 import arg_defs as arg_defs
 import csv
