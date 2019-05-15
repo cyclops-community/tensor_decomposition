@@ -20,17 +20,17 @@ results_dir = join(parent_dir, 'results')
 
 def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
     if mm_test == True:
-        [A,B,C,T,O] = stsrs.init_mm(s,R)
+        [A,B,C,T,O] = stsrs.init_mm(tenpy,s,R)
     elif pois_test == True:
-        [A,B,C,T,O] = stsrs.init_poisson(s,R)
+        [A,B,C,T,O] = stsrs.init_poisson(tenpy,s,R)
     else:
-        [A,B,C,T,O] = stsrs.init_rand3(s,R,sp_frac)
+        [A,B,C,T,O] = stsrs.init_rand3(tenpy,s,R,sp_frac)
     time_all = 0.
     for i in range(num_iter):
         if sp_res:
-            res = ck.get_residual_sp3(O,T,A,B,C)
+            res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
         else:
-            res = ck.get_residual3(T,A,B,C)
+            res = ck.get_residual3(tenpy,T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
             # write to csv file
@@ -38,7 +38,7 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,cs
                 i, time_all, res
             ])
         t0 = time.time()
-        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C,Regu)
+        [A,B,C] = stnd_ALS.dt_ALS_step(tenpy,T,A,B,C,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Sweep took", t1-t0,"seconds")
@@ -48,11 +48,11 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,cs
 
 def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
     if mm_test == True:
-        [A,B,C,T,O] = stsrs.init_mm(s,R)
+        [A,B,C,T,O] = stsrs.init_mm(tenpy,s,R)
     elif pois_test == True:
-        [A,B,C,T,O] = stsrs.init_poisson(s,R)
+        [A,B,C,T,O] = stsrs.init_poisson(tenpy,s,R)
     else:
-        [A,B,C,T,O] = stsrs.init_rand3(s,R,sp_frac)
+        [A,B,C,T,O] = stsrs.init_rand3(tenpy,s,R,sp_frac)
     time_all = 0.
     Ta = []
     Tb = []
@@ -68,9 +68,9 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_t
         
     for i in range(num_iter):
         if sp_res:
-            res = ck.get_residual_sp3(O,T,A,B,C)
+            res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
         else:
-            res = ck.get_residual3(T,A,B,C)
+            res = ck.get_residual3(tenpy,T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
             # write to csv file
@@ -78,7 +78,7 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_t
                 i, time_all, res
             ])
         t0 = time.time()
-        [A,B,C] = slic_ALS.sliced_ALS_step(Ta,Tb,Tc,A,B,C,Regu)
+        [A,B,C] = slic_ALS.sliced_ALS_step(tenpy,Ta,Tb,Tc,A,B,C,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Sweep took", t1-t0,"seconds")
@@ -89,18 +89,18 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_t
 
 def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None,sp_update_factor=False):
     if mm_test == True:
-        [A,B,C,T,O] = stsrs.init_mm(s,R)
+        [A,B,C,T,O] = stsrs.init_mm(tenpy,s,R)
     elif pois_test == True:
-        [A,B,C,T,O] = stsrs.init_poisson(s,R)
+        [A,B,C,T,O] = stsrs.init_poisson(tenpy,s,R)
     else:
-        [A,B,C,T,O] = stsrs.init_rand3(s,R,sp_frac)
+        [A,B,C,T,O] = stsrs.init_rand3(tenpy,s,R,sp_frac)
     time_init = 0.
 
     for i in range(num_lowr_init_iter):
         if sp_res:
-            res = ck.get_residual_sp3(O,T,A,B,C)
+            res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
         else:
-            res = ck.get_residual3(T,A,B,C)
+            res = ck.get_residual3(tenpy,T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
             # write to csv file
@@ -108,7 +108,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
                 i, time_init, res
             ])
         t0 = time.time()
-        [A,B,C] = stnd_ALS.dt_ALS_step(T,A,B,C,Regu)
+        [A,B,C] = stnd_ALS.dt_ALS_step(tenpy,T,A,B,C,Regu)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Full-rank sweep took", t1-t0,"seconds, iteration ",i)
@@ -126,21 +126,21 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         A2 = ctf.random.random((r,R))
         B2 = ctf.random.random((r,R))
         C2 = ctf.random.random((r,R))
-        [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves_lowr(T,A1,A2,B1,B2,C1,C2)
-        A = ctf.dot(A1,A2)
-        B = ctf.dot(B1,B2)
-        C = ctf.dot(C1,C2)
+        [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves_lowr(tenpy,T,A1,A2,B1,B2,C1,C2)
+        A = tenpy.dot(A1,A2)
+        B = tenpy.dot(B1,B2)
+        C = tenpy.dot(C1,C2)
         if ctf.comm().rank() == 0:
             print("Done initializing leaves from low rank factor matrices")
     else:
-        [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves(T,A,B,C)
+        [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves(tenpy,T,A,B,C)
 
     time_lowr = time.time() - time_lowr
     for i in range(num_iter-num_lowr_init_iter):
         if sp_res:
-            res = ck.get_residual_sp3(O,T,A,B,C)
+            res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
         else:
-            res = ck.get_residual3(T,A,B,C)
+            res = ck.get_residual3(tenpy,T,A,B,C)
         if ctf.comm().rank() == 0:
             print("Residual is", res)
             # write to csv file
@@ -154,7 +154,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         symb_uf = "solve_sys_lowr"
         if sp_update_factor == True:
               symb_uf = "solve_sys_lowr_sp"
-        [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,symb_uls,symb_uf)
+        [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(tenpy,T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,symb_uls,symb_uf)
         t1 = time.time()
         if ctf.comm().rank() == 0:
             print("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
@@ -205,8 +205,17 @@ if __name__ == "__main__":
     num_slices = args.num_slices
     pois_test = args.pois_test
     sp_update_factor = args.sp_update_factor
+    tlib = args.tlib
 
-    Regu = args.regularization * ctf.eye(R,R)
+    if tlib == "numpy":
+        import numpy as tenpy
+    elif tlib == "ctf":
+        import ctf as tenpy
+    else:
+        print("ERROR: Invalid --tlib input")
+
+
+    Regu = args.regularization * tenpy.eye(R,R)
 
     if run_naive:
         if num_slices == 1:

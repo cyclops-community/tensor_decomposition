@@ -1,11 +1,11 @@
 import numpy as np
 import queue
-import ctf
-from ctf import random
+#import tenpy
+#from tenpy import random
 from .common_kernels import solve_sys, compute_lin_sysN
 
 
-def dt_ALS_step(T,A,Regu):
+def dt_ALS_step(tenpy,T,A,Regu):
     q = queue.Queue()
     for i in range(len(A)):
         q.put(i)
@@ -29,10 +29,10 @@ def dt_ALS_step(T,A,Regu):
                 nd = M.ndim-1
             einstr = "".join([chr(ord('a')+j) for j in range(nd)])+ci+"," \
                         + (chr(ord('a')+ii))+"R"+"->"+"".join([chr(ord('a')+j) for j in range(nd) if j != ii])+"R"
-            N = ctf.einsum(einstr,M,A[ii])
+            N = tenpy.einsum(einstr,M,A[ii])
             ss = s[-1][0].copy()
             ss.remove(ii)
             s.append((ss,N))
-        A[i] = solve_sys(compute_lin_sysN(A,i,Regu), s[-1][1])
+        A[i] = solve_sys(tenpy,compute_lin_sysN(tenpy,A,i,Regu), s[-1][1])
     return A
 

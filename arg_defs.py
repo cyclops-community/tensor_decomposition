@@ -109,6 +109,12 @@ def add_general_arguments(parser):
         default="random",
         metavar='string',
         help='choose tensor to test, available: random, mom_cons, and mom_cons_sv (default: random)')
+    parser.add_argument(
+        '--tlib',
+        default="ctf",
+        metavar='string',
+        help='choose tensor library teo test, choose between numpy and ctf (default: ctf)')
+
 
 
 
