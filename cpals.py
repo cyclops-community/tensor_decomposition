@@ -18,7 +18,7 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def test_rand_naive(A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
+def CP_ALS(A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
     time_all = 0.
     optimizer = stnd_ALS.DTALS_Optimizer()
 
@@ -30,9 +30,8 @@ def test_rand_naive(A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
         if ctf.comm().rank() == 0:
             print("Residual is", res)
             # write to csv file
-            csv_writer.writerow([
-                i, time_all, res
-            ])
+            if csv_writer is not None:
+                csv_writer.writerow([ i, time_all, res ])
         t0 = time.time()
         A = optimizer.step(T,A,Regu)
         t1 = time.time()
@@ -42,7 +41,7 @@ def test_rand_naive(A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
     if ctf.comm().rank() == 0:
         print("Naive method took",time_all,"seconds overall")
 
-
+    return res
 
 if __name__ == "__main__":
 
@@ -101,5 +100,5 @@ if __name__ == "__main__":
     A = []
     for i in range(T.ndim):
         A.append(ctf.random.random((T.shape[i],R)))
-    test_rand_naive(A,T,O,num_iter,sp_res,csv_writer,Regu)
+    CP_ALS(A,T,O,num_iter,sp_res,csv_writer,Regu)
 

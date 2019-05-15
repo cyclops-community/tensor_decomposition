@@ -12,9 +12,17 @@ to install necessary packages.
 Run 
 
 ```
-python test_ALS3.py -h
+python cpals.py -h
 ```
 to see the existing input arguments and their functions.
+
+Run 
+
+```
+python cptests.py
+```
+to test some simple CP runs.
+
 
 Run 
 
