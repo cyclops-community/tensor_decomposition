@@ -23,8 +23,7 @@ def solve_sys_svd(tenpy, G, RHS):
     X = tenpy.dot(RHS, U)
     0.*X.i("ij") << S.i("j") * X.i("ij")
     t1 = time.time()
-    if ctf.comm().rank() == 0:
-        print("Solving linear system took ",t1-t0,"seconds")
+    tenpy.printf("Solving linear system took ",t1-t0,"seconds")
     return tenpy.dot(X, VT)
 
 def solve_sys(tenpy, G, RHS):
@@ -37,8 +36,7 @@ def get_residual3(tenpy,T,A,B,C):
     t0 = time.time()
     nrm = tenpy.vecnorm(T-tenpy.einsum("ia,ja,ka->ijk",A,B,C))
     t1 = time.time()
-    if ctf.comm().rank() == 0:
-        print("Residual computation took",t1-t0,"seconds")
+    tenpy.printf("Residual computation took",t1-t0,"seconds")
     return nrm
 
 def get_residual_sp3(tenpy,O,T,A,B,C):
@@ -51,8 +49,7 @@ def get_residual_sp3(tenpy,O,T,A,B,C):
     nrm3 = tenpy.vecnorm(diff)**2
     nrm = (nrm3+nrm2-nrm1)**.5
     t1 = time.time()
-    if ctf.comm().rank() == 0:
-        print("Sparse residual computation took",t1-t0,"seconds")
+    tenpy.printf("Sparse residual computation took",t1-t0,"seconds")
     return nrm
 
 def get_residual(tenpy,T,A):
@@ -75,7 +72,6 @@ def get_residual_sp(tenpy,O,T,A):
     nrm3 = tenpy.vecnorm(diff)**2
     nrm = (nrm3+nrm2-nrm1)**.5
     t1 = time.time()
-    if ctf.comm().rank() == 0:
-        print("Sparse residual computation took",t1-t0,"seconds")
+    tenpy.printf("Sparse residual computation took",t1-t0,"seconds")
     return nrm
 

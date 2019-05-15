@@ -1,6 +1,4 @@
 import numpy as np
-import ctf
-from ctf import random
 import sys
 import time
 import CPD.common_kernels as ck
@@ -18,7 +16,7 @@ from pathlib import Path
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
+def test_rand_naive(tenpy,s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(tenpy,s,R)
     elif pois_test == True:
@@ -31,7 +29,7 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,cs
             res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
         else:
             res = ck.get_residual3(tenpy,T,A,B,C)
-        if ctf.comm().rank() == 0:
+        if tenpy.is_master_proc():
             print("Residual is", res)
             # write to csv file
             csv_writer.writerow([
@@ -40,13 +38,11 @@ def test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test=False,pois_test=False,cs
         t0 = time.time()
         [A,B,C] = stnd_ALS.dt_ALS_step(tenpy,T,A,B,C,Regu)
         t1 = time.time()
-        if ctf.comm().rank() == 0:
-            print("Sweep took", t1-t0,"seconds")
+        tenpy.printf("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
-    if ctf.comm().rank() == 0:
-        print("Naive method took",time_all,"seconds overall")
+    tenpy.printf("Naive method took",time_all,"seconds overall")
 
-def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
+def test_rand_sliced(tenpy,s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_test=False,csv_writer=None,Regu=None):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(tenpy,s,R)
     elif pois_test == True:
@@ -71,7 +67,7 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_t
             res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
         else:
             res = ck.get_residual3(tenpy,T,A,B,C)
-        if ctf.comm().rank() == 0:
+        if tenpy.is_master_proc():
             print("Residual is", res)
             # write to csv file
             csv_writer.writerow([
@@ -80,14 +76,12 @@ def test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test=False,pois_t
         t0 = time.time()
         [A,B,C] = slic_ALS.sliced_ALS_step(tenpy,Ta,Tb,Tc,A,B,C,Regu)
         t1 = time.time()
-        if ctf.comm().rank() == 0:
-            print("Sweep took", t1-t0,"seconds")
+        tenpy.printf("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
-    if ctf.comm().rank() == 0:
-        print("Naive method took",time_all,"seconds overall")
+    tenpy.printf("Naive method took",time_all,"seconds overall")
 
 
-def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None,sp_update_factor=False):
+def test_rand_lowr(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None,sp_update_factor=False):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(tenpy,s,R)
     elif pois_test == True:
@@ -101,7 +95,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
         else:
             res = ck.get_residual3(tenpy,T,A,B,C)
-        if ctf.comm().rank() == 0:
+        if tenpy.is_master_proc():
             print("Residual is", res)
             # write to csv file
             csv_writer.writerow([
@@ -110,28 +104,24 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
         t0 = time.time()
         [A,B,C] = stnd_ALS.dt_ALS_step(tenpy,T,A,B,C,Regu)
         t1 = time.time()
-        if ctf.comm().rank() == 0:
-            print("Full-rank sweep took", t1-t0,"seconds, iteration ",i)
+        tenpy.printf("Full-rank sweep took", t1-t0,"seconds, iteration ",i)
         time_init += t1-t0
-        if ctf.comm().rank() == 0:
-            print ("Total time is ", time_init)
+        tenpy.printf("Total time is ", time_init)
     time_lowr = time.time()
 
     if num_lowr_init_iter == 0:
-        if ctf.comm().rank() == 0:
-            print("Initializing leaves from low rank factor matrices")
-        A1 = ctf.random.random((s,r))
-        B1 = ctf.random.random((s,r))
-        C1 = ctf.random.random((s,r))
-        A2 = ctf.random.random((r,R))
-        B2 = ctf.random.random((r,R))
-        C2 = ctf.random.random((r,R))
+        tenpy.printf("Initializing leaves from low rank factor matrices")
+        A1 = tenpy.random((s,r))
+        B1 = tenpy.random((s,r))
+        C1 = tenpy.random((s,r))
+        A2 = tenpy.random((r,R))
+        B2 = tenpy.random((r,R))
+        C2 = tenpy.random((r,R))
         [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves_lowr(tenpy,T,A1,A2,B1,B2,C1,C2)
         A = tenpy.dot(A1,A2)
         B = tenpy.dot(B1,B2)
         C = tenpy.dot(C1,C2)
-        if ctf.comm().rank() == 0:
-            print("Done initializing leaves from low rank factor matrices")
+        tenpy.printf("Done initializing leaves from low rank factor matrices")
     else:
         [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves(tenpy,T,A,B,C)
 
@@ -141,7 +131,7 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
             res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
         else:
             res = ck.get_residual3(tenpy,T,A,B,C)
-        if ctf.comm().rank() == 0:
+        if tenpy.is_master_proc():
             print("Residual is", res)
             # write to csv file
             csv_writer.writerow([
@@ -156,13 +146,10 @@ def test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=
               symb_uf = "solve_sys_lowr_sp"
         [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_msdt_step(tenpy,T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,symb_uls,symb_uf)
         t1 = time.time()
-        if ctf.comm().rank() == 0:
-            print("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
+        tenpy.printf("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
         time_lowr += t1-t0
-        if ctf.comm().rank() == 0:
-            print("Total time is ", time_lowr)
-    if ctf.comm().rank() == 0:
-        print("Low rank method (sparse update leaves =",sp_ul,") took",time_init,"for initial full rank steps",time_lowr,"for low rank steps and",time_init+time_lowr,"seconds overall")
+        tenpy.printf("Total time is ", time_lowr)
+    tenpy.printf("Low rank method (sparse update leaves =",sp_ul,") took",time_init,"for initial full rank steps",time_lowr,"for low rank steps and",time_init+time_lowr,"seconds overall")
 
 
 if __name__ == "__main__":
@@ -177,19 +164,6 @@ if __name__ == "__main__":
     csv_file = open(csv_path, 'a')#, newline='')
     csv_writer = csv.writer(
         csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-
-    w = ctf.comm()
-
-    if w.rank() == 0 :
-        # print the arguments
-        for arg in vars(args) :
-            print( arg+':', getattr(args, arg))
-        # initialize the csv file
-        if is_new_log:
-            csv_writer.writerow([
-                'iterations', 'time', 'residual'
-            ])
-
 
     s = args.s
     R = args.R
@@ -208,25 +182,32 @@ if __name__ == "__main__":
     tlib = args.tlib
 
     if tlib == "numpy":
-        import numpy as tenpy
+        import numpy_ext as tenpy
     elif tlib == "ctf":
-        import ctf as tenpy
+        import ctf_ext as tenpy
     else:
         print("ERROR: Invalid --tlib input")
+
+    if tenpy.is_master_proc():
+        # print the arguments
+        for arg in vars(args) :
+            print( arg+':', getattr(args, arg))
+        # initialize the csv file
+        if is_new_log:
+            csv_writer.writerow([
+                'iterations', 'time', 'residual'
+            ])
 
 
     Regu = args.regularization * tenpy.eye(R,R)
 
     if run_naive:
         if num_slices == 1:
-            if ctf.comm().rank() == 0:
-                print("Testing naive version, printing residual before every ALS sweep")
-            test_rand_naive(s,R,num_iter,sp_frac,sp_res,mm_test,pois_test,csv_writer,Regu)
+            tenpy.printf("Testing naive version, printing residual before every ALS sweep")
+            test_rand_naive(tenpy,s,R,num_iter,sp_frac,sp_res,mm_test,pois_test,csv_writer,Regu)
         else:
-            if ctf.comm().rank() == 0:
-                print("Testing sliced version, printing residual before every ALS sweep")
-            test_rand_sliced(s,R,num_iter,sp_frac,sp_res,num_slices,mm_test,pois_test,csv_writer,Regu)
+            tenpy.printf("Testing sliced version, printing residual before every ALS sweep")
+            test_rand_sliced(tenpy,s,R,num_iter,sp_frac,sp_res,num_slices,mm_test,pois_test,csv_writer,Regu)
     if run_lowr:
-        if ctf.comm().rank() == 0:
-            print("Testing low rank version, printing residual before every ALS sweep")
-        test_rand_lowr(s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu,sp_update_factor)
+        tenpy.printf("Testing low rank version, printing residual before every ALS sweep")
+        test_rand_lowr(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu,sp_update_factor)
