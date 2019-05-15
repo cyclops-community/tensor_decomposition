@@ -20,12 +20,13 @@ def printf(*string):
     print(string)
 
 def tensor(shape, sp, *args2):
-    return np.ndarray(shape, args2)
+    return np.ndarray(shape, *args2)
 
-def fill_sp_random(tensor, begin, end, sp_frac):
-    tensor = np.asarray(np.random.random(tensor.shape), dtype=tensor.dtype)*(end-begin) + begin
-    mask = np.random.random(tensor.shape)<sp_frac
+def sparse_random(shape, begin, end, sp_frac):
+    tensor = np.random.random(shape)*(end-begin) + begin
+    mask = np.random.random(shape)<sp_frac
     tensor = tensor * mask
+    return tensor
 
 def vecnorm(T):
     return la.norm(np.ravel(T))

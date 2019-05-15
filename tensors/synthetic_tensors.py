@@ -7,8 +7,7 @@ def init_rand(tenpy,order,s,R,sp_frac=1.):
     for i in range(order):
         A.append(tenpy.random((s,R)))
     if sp_frac<1.:
-        O = tenpy.tensor([s]*order,sp=True)
-        tenpy.fill_sp_random(tO,1.,1.,sp_frac)
+        O = tenpy.sparse_random([s]*order,1.,1.,sp_frac)
         T = tenpy.TTTP(O,A)
     else:
         T = tenpy.ones([s]*order)
@@ -21,8 +20,7 @@ def init_rand3(tenpy,s,R,sp_frac=1.):
     B = tenpy.random((s,R))
     C = tenpy.random((s,R))
     if sp_frac<1.:
-        O = tenpy.tensor((s,s,s),sp=True)
-        O.fill_sp_random(1.,1.,sp_frac)
+        O = tenpy.sparse_random((s,s,s),1.,1.,sp_frac)
         T = tenpy.TTTP(O,[A,B,C])
     else:
         T = tenpy.einsum("ia,ja,ka->ijk",A,B,C)
@@ -56,8 +54,7 @@ def init_poisson(s,R):
     I = tenpy.eye(sr,sr,sp=True) # sparse identity matrix
     T.i("aixbjy") << A.i("ab")*I.i("ij")*I.i("xy") + I.i("ab")*A.i("ij")*I.i("xy") + I.i("ab")*I.i("ij")*A.i("xy")
     # T.i("abijxy") << A.i("ab")*I.i("ij")*I.i("xy") + I.i("ab")*A.i("ij")*I.i("xy") + I.i("ab")*I.i("ij")*A.i("xy")
-    N = tenpy.tensor((s,s,s),sp=True)
-    N.fill_sp_random(-0.000,.000,1./s)
+    N = tenpy.sparse_random((s,s,s),-0.000,.000,1./s)
     T = T.reshape((s,s,s)) + N
     [inds, vals] = T.read_local()
     vals[:] = 1.

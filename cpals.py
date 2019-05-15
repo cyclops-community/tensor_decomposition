@@ -26,7 +26,7 @@ def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
         else:
             res = ck.get_residual(tenpy,T,A)
         if tenpy.is_master_proc():
-            print("Residual is", res)
+            print("[",i,"] Residual is", res)
             # write to csv file
             if csv_writer is not None:
                 csv_writer.writerow([ i, time_all, res ])

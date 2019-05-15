@@ -13,11 +13,13 @@ def printf(*string):
     if ctf.comm().rank() == 0:
         print(string)
 
-def tensor(shape, sp, *args2):
-    return ctf.tensor(shape, sp, args2)
+def tensor(shape, sp, *args):
+    return ctf.tensor(shape, sp, *args)
         
-def fill_sp_random(tensor, begin, end, sp_frac):
+def sparse_random(shape, begin, end, sp_frac):
+    tensor = ctf.tensor(shape, sp=True)
     tensor.fill_sp_random(begin, end, sp_frac)
+    return tensor
 
 def vecnorm(T):
     return ctf.vecnorm(T)
