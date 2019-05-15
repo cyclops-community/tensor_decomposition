@@ -16,8 +16,10 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def test_rand_naive(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
+def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
     time_all = 0.
+    optimizer = stnd_ALS.DTALS_Optimizer(tenpy)
+
     for i in range(num_iter):
         if sp_res:
             res = ck.get_residual_sp(tenpy,O,T,A)
@@ -26,17 +28,16 @@ def test_rand_naive(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
         if tenpy.is_master_proc():
             print("Residual is", res)
             # write to csv file
-            csv_writer.writerow([
-                i, time_all, res
-            ])
+            if csv_writer is not None:
+                csv_writer.writerow([ i, time_all, res ])
         t0 = time.time()
-        A = stnd_ALS.dt_ALS_step(tenpy,T,A,Regu)
+        A = optimizer.step(tenpy,T,A,Regu)
         t1 = time.time()
         tenpy.printf("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
     tenpy.printf("Naive method took",time_all,"seconds overall")
 
-
+    return res
 
 if __name__ == "__main__":
 
@@ -99,5 +100,4 @@ if __name__ == "__main__":
     A = []
     for i in range(T.ndim):
         A.append(tenpy.random((T.shape[i],R)))
-    test_rand_naive(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu)
-
+    CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu)
