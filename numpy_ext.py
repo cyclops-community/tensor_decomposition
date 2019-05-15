@@ -44,8 +44,12 @@ def solve_tri(A, B, lower=True, from_left=True, transp_L=False):
         A = A.T
     if not from_left:
         B = B.T
-        A = A.T
-        X = sla.solve_triangular(A, B, lower)
+        if transp_L:
+            llower = lower
+        else:
+            A = A.T
+            llower = not lower
+        X = sla.solve_triangular(A, B, llower)
         return X.T
     else:
         return sla.solve_triangular(A, B, lower)
