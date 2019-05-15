@@ -27,7 +27,6 @@ class CPDALSTestCase(unittest.TestCase):
 
             res = CP_ALS(tenpy,A,T,O,num_iter=30,sp_res=0,csv_writer=None,Regu=1.e-6)
             self.assertTrue(res<=0.5)
-
 if __name__ == '__main__':
     unittest.main()
 
