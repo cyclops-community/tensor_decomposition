@@ -18,7 +18,7 @@ results_dir = join(parent_dir, 'results')
 
 def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
     time_all = 0.
-    optimizer = stnd_ALS.DTALS_Optimizer(tenpy)
+    optimizer = stnd_ALS.DTALS_Optimizer(tenpy,T,A)
 
     for i in range(num_iter):
         if sp_res:
@@ -31,7 +31,7 @@ def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
             if csv_writer is not None:
                 csv_writer.writerow([ i, time_all, res ])
         t0 = time.time()
-        A = optimizer.step(tenpy,T,A,Regu)
+        A = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
