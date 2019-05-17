@@ -37,6 +37,9 @@ def dot(A,B):
 def svd(A):
     return la.svd(A)
 
+def svd_rand(A):
+    return la.svd(A)
+
 def cholesky(A):
     return la.cholesky(A)
 

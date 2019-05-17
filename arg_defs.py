@@ -81,6 +81,18 @@ def add_general_arguments(parser):
         metavar='int',
         help='Run Dimension tree algorithm with low rank update (default: 0)')
     parser.add_argument(
+        '--run-lowrank-dt',
+        type=int,
+        default=0,
+        metavar='int',
+        help='Run Dimension tree algorithm with low rank update on two of the factor matrices (default: 0)')
+    parser.add_argument(
+        '--num-inter-iter',
+        type=int,
+        default=10,
+        metavar='int',
+        help='Number of intermediate iterations when running low rand dimension tree with two fixed children of the root (default: 10)')
+    parser.add_argument(
         '--mm-test',
         type=int,
         default=0,
@@ -138,6 +150,8 @@ def get_file_prefix(args):
             'spfrac' + str(args.sp_fraction),
             'splowrank' + str(args.sp_updatelowrank),
             'runlowrank' + str(args.run_lowrank),
+            'runlowrankdt' + str(args.run_lowrank_dt),
+            'numinteriter' + str(args.num_inter_iter),
             'pois' + str(args.pois_test),
             'numslices' + str(args.num_slices),
             'numinit-iter' + str(args.num_lowr_init_iter),

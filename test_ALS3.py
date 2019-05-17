@@ -152,7 +152,7 @@ def test_rand_lowr(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,s
     tenpy.printf("Low rank method (sparse update leaves =",sp_ul,") took",time_init,"for initial full rank steps",time_lowr,"for low rank steps and",time_init+time_lowr,"seconds overall")
 
 
-def test_rand_lowr_dt(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None,sp_update_factor=False):
+def test_rand_lowr_dt(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None,sp_update_factor=False,num_inter_iter=10):
     if mm_test == True:
         [A,B,C,T,O] = stsrs.init_mm(tenpy,s,R)
     elif pois_test == True:
@@ -197,6 +197,9 @@ def test_rand_lowr_dt(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=Fals
         [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves(tenpy,T,A,B,C)
 
     time_lowr = time.time() - time_lowr
+    factor_matrices = ["A","B","C"]
+    factor_matrix_index = 0
+    counter = 0
     for i in range(num_iter-num_lowr_init_iter):
         if sp_res:
             res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
@@ -215,7 +218,11 @@ def test_rand_lowr_dt(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=Fals
         symb_uf = "solve_sys_lowr"
         if sp_update_factor == True:
               symb_uf = "solve_sys_lowr_sp"
-        [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_dt_step(tenpy,T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,symb_uls,symb_uf)
+        if counter == num_inter_iter:
+            counter = 0
+            factor_matrix_index = (factor_matrix_index + 1)%3
+        [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_dt_step(tenpy,T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,symb_uls,symb_uf,factor_matrices[factor_matrix_index])
+        counter += 1
         t1 = time.time()
         tenpy.printf("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
         time_lowr += t1-t0
@@ -246,6 +253,8 @@ if __name__ == "__main__":
     sp_res = args.sp_res
     run_naive = args.run_naive
     run_lowr = args.run_lowrank
+    run_lowr_dt = args.run_lowrank_dt
+    num_inter_iter = args.num_inter_iter
     mm_test = args.mm_test
     num_slices = args.num_slices
     pois_test = args.pois_test
@@ -285,4 +294,4 @@ if __name__ == "__main__":
         test_rand_lowr(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu,sp_update_factor)
     if run_lowr_dt:
         tenpy.printf("Testing low rank dt version, printing residual before every ALS sweep")
-        test_rand_lowr_dt(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu,sp_update_factor)
+        test_rand_lowr_dt(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu,sp_update_factor,num_inter_iter)
