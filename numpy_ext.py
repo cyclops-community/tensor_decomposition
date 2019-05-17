@@ -65,11 +65,17 @@ def einsum(string, *args, out=None):
 def ones(shape):
     return np.ones(shape)
 
+def zeros(shape):
+    return np.zeros(shape)
+
 def sum(A, axes=None):
     return np.sum(A, axes)
 
 def random(shape):
     return np.random.random(shape)
+
+def seed(seed):
+    return np.random.seed(seed)
 
 def speye(*args):
     return np.eye(*args)

@@ -49,7 +49,6 @@ class DTALS_Optimizer(object):
         return self.A
 
 
-
 class PPALS_Optimizer(DTALS_Optimizer):
     """Pairwise perturbation CP decomposition optimizer
 
@@ -74,8 +73,8 @@ class PPALS_Optimizer(DTALS_Optimizer):
         self.tree = { '0':(list(range(len(self.A))),self.T) }
         self.order = len(A)
         self.dA = []  
-        for i in range(order):
-            self.dA.append(tenpy.zeros((self.T.shape[i],R)))
+        for i in range(self.order):
+            self.dA.append(tenpy.zeros((self.A[i].shape[0],self.A[i].shape[1])))
 
     def _get_nodename(self, nodeindex):
         """Based on the index, output the node name used for the key of self.tree.
@@ -92,9 +91,9 @@ class PPALS_Optimizer(DTALS_Optimizer):
             _get_nodename(np.array([1,2])) == 'bc'
 
         """
-        if len(nodeindex) == order:
+        if len(nodeindex) == self.order:
             return '0'
-        return "".join([chr(ord('a')+j) for j in range(nodeindex)])
+        return "".join([chr(ord('a')+j) for j in nodeindex])
 
     def _get_einstr(self, nodeindex, parent_nodeindex, contract_index):
         """Build the Einstein string for the contraction. 
@@ -116,7 +115,7 @@ class PPALS_Optimizer(DTALS_Optimizer):
 
         """
         ci = ""
-        if len(parent_nodeindex) != order:
+        if len(parent_nodeindex) != self.order:
             ci = "R"
 
         str1 = "".join([chr(ord('a')+j) for j in parent_nodeindex]) + ci
@@ -137,14 +136,14 @@ class PPALS_Optimizer(DTALS_Optimizer):
             contract_index (int): the index difference between the current and parent node
         
         """
-        fulllist = np.array(range(order))
+        fulllist = np.array(range(self.order))
 
         comp_index = np.setdiff1d(fulllist, nodeindex)
         comp_parent_index = comp_index[:-1]
 
         contract_index = comp_index[-1]
         parent_index = np.setdiff1d(fulllist, comp_parent_index)
-        parent_nodename = _get_nodename(parent_index)
+        parent_nodename = self._get_nodename(parent_index)
 
         return parent_nodename, parent_index, contract_index
 
@@ -159,7 +158,7 @@ class PPALS_Optimizer(DTALS_Optimizer):
         parent_nodename, parent_nodeindex, contract_index = self._get_parentnode(nodeindex)
         einstr = self._get_einstr(nodeindex,parent_nodeindex,contract_index)
 
-        if not self.tree.find(parent_nodename):
+        if not parent_nodename in self.tree:
             self._initialize_treenode(parent_nodeindex)
 
         N = self.tenpy.einsum(einstr,self.tree[parent_nodename][1],self.A[contract_index])
@@ -169,49 +168,49 @@ class PPALS_Optimizer(DTALS_Optimizer):
     def _initialize_tree(self):
         """Initialize self.tree       
         """
-
         self.tree = { '0':(list(range(len(self.A))),self.T) }
         self.dA = []  
-        for i in range(order):
-            self.dA.append(tenpy.zeros((self.T.shape[i],R)))
+        for i in range(self.order):
+            self.dA.append(self.tenpy.zeros((self.A[i].shape[0],self.A[i].shape[1])))
 
-        for ii in range(0, order):
-            for jj in range(ii+1, order):
+        for ii in range(0, self.order):
+            for jj in range(ii+1, self.order):
                 self._initialize_treenode(np.array([ii,jj]))
 
-        for ii in range(0, order):
+        for ii in range(0, self.order):
             self._initialize_treenode(np.array([ii]))
 
     def _step_pp_subroutine(self,Regu):
         """Doing one step update based on pairwise perturbation
 
         Args:
-            Regu (float): Regularization term
+            Regu (matrix): Regularization term
 
         Returns:
             A (list): list of decomposed matrices
         
         """
-        for i in range(order):
+        print("***** pairwise perturbation step *****")
+        for i in range(self.order):
             nodename = self._get_nodename(np.array([i]))
-            N = self.tree[nodename]
+            N = self.tree[nodename][1]
 
             for j in range(i):
                 parentname = self._get_nodename(np.array([j,i]))
                 einstr = self._get_einstr(np.array([i]), np.array([j,i]), np.array([j]))
                 N += self.tenpy.einsum(einstr,self.tree[parentname][1],self.dA[j])
-            for j in range(i+1, order):
+            for j in range(i+1, self.order):
                 parentname = self._get_nodename(np.array([i,j]))
                 einstr = self._get_einstr(np.array([i]), np.array([i,j]), np.array([j]))
                 N += self.tenpy.einsum(einstr,self.tree[parentname][1],self.dA[j])
 
             output = solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), N)
             self.dA[i] = output - self.A[i]
-            self.A = output
+            self.A[i] = output
 
         num_smallupdate = 0
-        for i in range(order):
-            if tenpy.sum(self.dA[i]**2,axis=0)**.5 > self.tol_restart_dt:
+        for i in range(self.order):
+            if self.tenpy.sum(self.dA[i]**2)**.5 > self.tol_restart_dt:
                 num_smallupdate += 1
 
         if num_smallupdate > 0:
@@ -225,29 +224,30 @@ class PPALS_Optimizer(DTALS_Optimizer):
         """Doing one step update based on dimension tree
 
         Args:
-            Regu (float): Regularization term
+            Regu (matrix): Regularization term
 
         Returns:
             A (list): list of decomposed matrices
         
         """
-        A_update = super(PPALS_Optimizer, self).step(Regu)
+        A_prev = self.A.copy()
+        super(PPALS_Optimizer, self).step(Regu)
         num_smallupdate = 0
-        for i in range(order):
-            self.dA[i] = A_update[i] - self.A[i]
-            if tenpy.sum(self.dA[i]**2,axis=0)**.5 < self.tol_restart_dt:
+        for i in range(self.order):
+            self.dA[i] = self.A[i] - A_prev[i]
+            if self.tenpy.sum(self.dA[i]**2)**.5 < self.tol_restart_dt:
                 num_smallupdate += 1
 
-        if num_smallupdate == order:
+        if num_smallupdate == self.order:
             self.pp = True
             self.reinitialize_tree = True
-        return A
+        return self.A
 
     def step(self,Regu):
         """Doing one step update in the optimizer
 
         Args:
-            Regu (float): Regularization term
+            Regu (matrix): Regularization term
 
         Returns:
             A (list): list of decomposed matrices

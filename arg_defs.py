@@ -114,6 +114,17 @@ def add_general_arguments(parser):
         default="ctf",
         metavar='string',
         help='choose tensor library teo test, choose between numpy and ctf (default: ctf)')
+    parser.add_argument(
+        '--method',
+        default="DT",
+        metavar='string',
+        help='choose the optimization method: DT, PP (default: DT)')
+    parser.add_argument(
+        '--tol-restart-dt',
+        default=0.01,
+        type=float,
+        metavar='float',
+        help='used in pairwise perturbation optimizer, tolerance for dimention tree restart')
 
 
 

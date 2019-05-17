@@ -16,9 +16,13 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None):
+def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol_restart_dt=0.01):
     time_all = 0.
-    optimizer = stnd_ALS.DTALS_Optimizer(tenpy,T,A)
+    optimizer_list = {
+        'DT': stnd_ALS.DTALS_Optimizer(tenpy,T,A),
+        'PP': stnd_ALS.PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
+    }
+    optimizer = optimizer_list[method]
 
     for i in range(num_iter):
         if sp_res:
@@ -100,4 +104,4 @@ if __name__ == "__main__":
     A = []
     for i in range(T.ndim):
         A.append(tenpy.random((T.shape[i],R)))
-    CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu)
+    CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol_restart_dt)

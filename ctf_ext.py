@@ -42,11 +42,17 @@ def einsum(string, *args):
 def ones(shape):
     return ctf.ones(shape)
 
+def zeros(shape):
+    return ctf.zeros(shape)
+
 def sum(A, axes=None):
     return ctf.sum(A, axes)
 
 def random(shape):
     return ctf.random.random(shape)
+
+def seed(seed):
+    return ctf.random.seed(seed)
 
 def speye(*args):
     return ctf.speye(*args)
