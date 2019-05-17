@@ -65,6 +65,9 @@ def einsum(string, *args, out=None):
 def ones(shape):
     return np.ones(shape)
 
+def zeros(shape):
+    return np.zeros(shape)
+
 def sum(A, axes=None):
     return np.sum(A, axes)
 

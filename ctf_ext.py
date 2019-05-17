@@ -42,6 +42,9 @@ def einsum(string, *args):
 def ones(shape):
     return ctf.ones(shape)
 
+def zeros(shape):
+    return ctf.zeros(shape)
+
 def sum(A, axes=None):
     return ctf.sum(A, axes)
 
