@@ -30,6 +30,9 @@ def dot(A,B):
 def svd(A):
     return ctf.svd(A)
 
+def svd_rand(A,r):
+    return ctf.svd_rand(A,r)
+
 def cholesky(A):
     return ctf.cholesky(A)
 
