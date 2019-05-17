@@ -24,7 +24,7 @@ def init_rand3(tenpy,s,R,sp_frac=1.):
         T = tenpy.TTTP(O,[A,B,C])
     else:
         T = tenpy.einsum("ia,ja,ka->ijk",A,B,C)
-        O = None
+        O = tenpy.ones(T.shape)
     A = tenpy.random((s,R))
     B = tenpy.random((s,R))
     C = tenpy.random((s,R))
