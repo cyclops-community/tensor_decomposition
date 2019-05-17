@@ -198,6 +198,7 @@ if __name__ == "__main__":
                 'iterations', 'time', 'residual'
             ])
 
+    tenpy.seed(1)
 
     Regu = args.regularization * tenpy.eye(R,R)
 

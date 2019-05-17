@@ -51,6 +51,9 @@ def sum(A, axes=None):
 def random(shape):
     return ctf.random.random(shape)
 
+def seed(seed):
+    return ctf.random.seed(seed)
+
 def speye(*args):
     return ctf.speye(*args)
 

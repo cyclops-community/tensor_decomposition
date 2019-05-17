@@ -122,25 +122,25 @@ def update_leaves_sp_C(T,A,B,C1,C2):
 def lowr_msdt_step(tenpy,T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul,uf):
     G = compute_lin_sys(tenpy,B,C,Regu)
     ERHS_A = RHS_A - tenpy.dot(A, G)
-    [A1,A2] = globals()[uf](G, ERHS_A, r)
+    [A1,A2] = globals()[uf](tenpy, G, ERHS_A, r)
     A += tenpy.dot(A1, A2)
-    [URHS_B,URHS_C] = globals()[ul+"_A"](T,A1,A2,B,C)
+    [URHS_B,URHS_C] = globals()[ul+"_A"](tenpy,T,A1,A2,B,C)
     RHS_B += URHS_B
     RHS_C += URHS_C
 
     G = compute_lin_sys(tenpy,A,C,Regu)
     ERHS_B = RHS_B - tenpy.dot(B, G)
-    [B1,B2] = globals()[uf](G, ERHS_B, r)
+    [B1,B2] = globals()[uf](tenpy, G, ERHS_B, r)
     B += tenpy.dot(B1, B2)
-    [URHS_A,URHS_C] = globals()[ul+"_B"](T,A,B1,B2,C)
+    [URHS_A,URHS_C] = globals()[ul+"_B"](tenpy,T,A,B1,B2,C)
     RHS_A += URHS_A
     RHS_C += URHS_C
 
     G = compute_lin_sys(tenpy,A,B,Regu)
     ERHS_C = RHS_C - tenpy.dot(C, G)
-    [C1,C2] = globals()[uf](G, ERHS_C, r)
+    [C1,C2] = globals()[uf](tenpy, G, ERHS_C, r)
     C += tenpy.dot(C1, C2)
-    [URHS_A,URHS_B] = globals()[ul+"_C"](T,A,B,C1,C2)
+    [URHS_A,URHS_B] = globals()[ul+"_C"](tenpy,T,A,B,C1,C2)
     RHS_A += URHS_A
     RHS_B += URHS_B
 

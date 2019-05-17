@@ -74,6 +74,9 @@ def sum(A, axes=None):
 def random(shape):
     return np.random.random(shape)
 
+def seed(seed):
+    return np.random.seed(seed)
+
 def speye(*args):
     return np.eye(*args)
 
