@@ -152,6 +152,77 @@ def test_rand_lowr(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,s
     tenpy.printf("Low rank method (sparse update leaves =",sp_ul,") took",time_init,"for initial full rank steps",time_lowr,"for low rank steps and",time_init+time_lowr,"seconds overall")
 
 
+def test_rand_lowr_dt(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul=False,sp_res=False,mm_test=False,pois_test=False,csv_writer=None,Regu=None,sp_update_factor=False):
+    if mm_test == True:
+        [A,B,C,T,O] = stsrs.init_mm(tenpy,s,R)
+    elif pois_test == True:
+        [A,B,C,T,O] = stsrs.init_poisson(tenpy,s,R)
+    else:
+        [A,B,C,T,O] = stsrs.init_rand3(tenpy,s,R,sp_frac)
+    time_init = 0.
+
+    for i in range(num_lowr_init_iter):
+        if sp_res:
+            res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
+        else:
+            res = ck.get_residual3(tenpy,T,A,B,C)
+        if tenpy.is_master_proc():
+            print("Residual is", res)
+            # write to csv file
+            csv_writer.writerow([
+                i, time_init, res
+            ])
+        t0 = time.time()
+        [A,B,C] = stnd_ALS.dt_ALS_step(tenpy,T,A,B,C,Regu)
+        t1 = time.time()
+        tenpy.printf("Full-rank sweep took", t1-t0,"seconds, iteration ",i)
+        time_init += t1-t0
+        tenpy.printf("Total time is ", time_init)
+    time_lowr = time.time()
+
+    if num_lowr_init_iter == 0:
+        tenpy.printf("Initializing leaves from low rank factor matrices")
+        A1 = tenpy.random((s,r))
+        B1 = tenpy.random((s,r))
+        C1 = tenpy.random((s,r))
+        A2 = tenpy.random((r,R))
+        B2 = tenpy.random((r,R))
+        C2 = tenpy.random((r,R))
+        [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves_lowr(tenpy,T,A1,A2,B1,B2,C1,C2)
+        A = tenpy.dot(A1,A2)
+        B = tenpy.dot(B1,B2)
+        C = tenpy.dot(C1,C2)
+        tenpy.printf("Done initializing leaves from low rank factor matrices")
+    else:
+        [RHS_A,RHS_B,RHS_C] = lowr_ALS.build_leaves(tenpy,T,A,B,C)
+
+    time_lowr = time.time() - time_lowr
+    for i in range(num_iter-num_lowr_init_iter):
+        if sp_res:
+            res = ck.get_residual_sp3(tenpy,O,T,A,B,C)
+        else:
+            res = ck.get_residual3(tenpy,T,A,B,C)
+        if tenpy.is_master_proc():
+            print("Residual is", res)
+            # write to csv file
+            csv_writer.writerow([
+                i+num_lowr_init_iter, time_init+time_lowr, res
+            ])
+        t0 = time.time()
+        symb_uls = "update_leaves"
+        if sp_ul == True:
+              symb_uls = "update_leaves_sp"
+        symb_uf = "solve_sys_lowr"
+        if sp_update_factor == True:
+              symb_uf = "solve_sys_lowr_sp"
+        [A,B,C,RHS_A,RHS_B,RHS_C] = lowr_ALS.lowr_dt_step(tenpy,T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,symb_uls,symb_uf)
+        t1 = time.time()
+        tenpy.printf("Low-rank sweep took", t1-t0,"seconds, Iteration",i)
+        time_lowr += t1-t0
+        tenpy.printf("Total time is ", time_lowr)
+    tenpy.printf("Low rank method (sparse update leaves =",sp_ul,") took",time_init,"for initial full rank steps",time_lowr,"for low rank steps and",time_init+time_lowr,"seconds overall")
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -209,5 +280,8 @@ if __name__ == "__main__":
             tenpy.printf("Testing sliced version, printing residual before every ALS sweep")
             test_rand_sliced(tenpy,s,R,num_iter,sp_frac,sp_res,num_slices,mm_test,pois_test,csv_writer,Regu)
     if run_lowr:
-        tenpy.printf("Testing low rank version, printing residual before every ALS sweep")
+        tenpy.printf("Testing low rank msdt version, printing residual before every ALS sweep")
         test_rand_lowr(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu,sp_update_factor)
+    if run_lowr_dt:
+        tenpy.printf("Testing low rank dt version, printing residual before every ALS sweep")
+        test_rand_lowr_dt(tenpy,s,R,r,num_iter,num_lowr_init_iter,sp_frac,sp_ul,sp_res,mm_test,pois_test,csv_writer,Regu,sp_update_factor)

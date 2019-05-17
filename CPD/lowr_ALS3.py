@@ -147,3 +147,48 @@ def lowr_msdt_step(tenpy,T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul,uf):
     return [A,B,C,RHS_A,RHS_B,RHS_C]
 
 
+def lowr_dt_step(tenpy,T,A,B,C,RHS_A,RHS_B,RHS_C,r,Regu,ul,uf,full_rank_factor):
+    if not full_rank_factor == "A":
+        G = compute_lin_sys(tenpy,B,C,Regu)
+        ERHS_A = RHS_A - tenpy.dot(A, G)
+        [A1,A2] = globals()[uf](G, ERHS_A, r)
+        A += tenpy.dot(A1, A2)
+        [URHS_B,URHS_C] = globals()[ul+"_A"](T,A1,A2,B,C)
+        RHS_B += URHS_B
+        RHS_C += URHS_C
+    else: 
+        A = solve_sys(tenpy,compute_lin_sys(tenpy,B,C,Regu), RHS_A)
+        TA = tenpy.einsum("ijk,ia->jka",T,A)
+        RHS_B = tenpy.einsum("jka,ka->ja",TA,C)
+        RHS_C = tenpy.einsum("jka,ja->ka",TA,B)
+
+    if not full_rank_factor == "B":
+        G = compute_lin_sys(tenpy,A,C,Regu)
+        ERHS_B = RHS_B - tenpy.dot(B, G)
+        [B1,B2] = globals()[uf](G, ERHS_B, r)
+        B += tenpy.dot(B1, B2)
+        [URHS_A,URHS_C] = globals()[ul+"_B"](T,A,B1,B2,C)
+        RHS_A += URHS_A
+        RHS_C += URHS_C
+    else:
+        B = solve_sys(tenpy,compute_lin_sys(tenpy,A,C,Regu), RHS_B)
+        TB = tenpy.einsum("ijk,ja->ika",T,B)
+        RHS_A = tenpy.einsum("ika,ka->ia",TB,C)
+        RHS_C = tenpy.einsum("ika,ia->ka",TB,A)
+
+    if not full_rank_factor == "C":
+        G = compute_lin_sys(tenpy,A,B,Regu)
+        ERHS_C = RHS_C - tenpy.dot(C, G)
+        [C1,C2] = globals()[uf](G, ERHS_C, r)
+        C += tenpy.dot(C1, C2)
+        [URHS_A,URHS_B] = globals()[ul+"_C"](T,A,B,C1,C2)
+        RHS_A += URHS_A
+        RHS_B += URHS_B
+    else:
+        C = solve_sys(tenpy,compute_lin_sys(tenpy,A,B,Regu), RHS_C)
+        TC = tenpy.einsum("ijk,ka->ija",T,C)
+        RHS_A = tenpy.einsum("ija,ja->ia",T,B)
+        RHS_B = tenpy.einsum("ija,ia->ja",T,A)
+
+    return [A,B,C,RHS_A,RHS_B,RHS_C]
+
