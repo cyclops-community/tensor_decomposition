@@ -19,8 +19,8 @@ results_dir = join(parent_dir, 'results')
 def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol_restart_dt=0.01):
     time_all = 0.
     optimizer_list = {
-        'DT': stnd_ALS.DTALS_Optimizer(tenpy,T,A),
-        'PP': stnd_ALS.PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
+        'DT': stnd_ALS.CP_DTALS_Optimizer(tenpy,T,A),
+        'PP': stnd_ALS.CP_PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
     }
     optimizer = optimizer_list[method]
 
