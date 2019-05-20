@@ -1,7 +1,7 @@
 import numpy as np
 import queue
 from .common_kernels import solve_sys, compute_lin_sysN
-from als.ALS import DTALS_base, PPALS_base
+from als.ALS_optimizer import DTALS_base, PPALS_base
 
 class CP_DTALS_Optimizer(DTALS_base):
 

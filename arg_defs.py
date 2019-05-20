@@ -132,6 +132,17 @@ def add_general_arguments(parser):
         metavar='string',
         help='choose the optimization method: DT, PP (default: DT)')
     parser.add_argument(
+        '--decomposition',
+        default="CP",
+        metavar='string',
+        help='choose the decomposition method: CP, Tucker (default: CP)')
+    parser.add_argument(
+        '--hosvd',
+        type=int,
+        default=0,
+        metavar='int',
+        help='initialize factor matrices with hosvd or not (default: 0)')
+    parser.add_argument(
         '--tol-restart-dt',
         default=0.01,
         type=float,

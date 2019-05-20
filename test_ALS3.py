@@ -262,9 +262,9 @@ if __name__ == "__main__":
     tlib = args.tlib
 
     if tlib == "numpy":
-        import numpy_ext as tenpy
+        import backend.numpy_ext as tenpy
     elif tlib == "ctf":
-        import ctf_ext as tenpy
+        import backend.ctf_ext as tenpy
     else:
         print("ERROR: Invalid --tlib input")
 

@@ -65,3 +65,6 @@ def eye(*args):
 
 def transpose(A):
     return ctf.transpose(A)
+
+def argmax(A, axis=0):
+    return abs(A).to_nparray().argmax(axis=axis)

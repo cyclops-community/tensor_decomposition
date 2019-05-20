@@ -88,3 +88,6 @@ def eye(*args):
 
 def transpose(A):
     return A.T
+
+def argmax(A, axis=0):
+    return abs(A).argmax(axis=axis)

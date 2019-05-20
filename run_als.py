@@ -6,8 +6,6 @@ import argparse
 import csv
 from pathlib import Path
 from os.path import dirname, join
-import CPD.common_kernels as ck
-import CPD.standard_ALS as stnd_ALS
 import tensors.synthetic_tensors as stsrs
 import argparse
 import arg_defs as arg_defs
@@ -17,18 +15,49 @@ parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
 def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol_restart_dt=0.01):
+
+    from CPD.common_kernels import get_residual_sp, get_residual
+    from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
+
     time_all = 0.
     optimizer_list = {
-        'DT': stnd_ALS.CP_DTALS_Optimizer(tenpy,T,A),
-        'PP': stnd_ALS.CP_PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
+        'DT': CP_DTALS_Optimizer(tenpy,T,A),
+        'PP': CP_PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
     }
     optimizer = optimizer_list[method]
 
     for i in range(num_iter):
         if sp_res:
-            res = ck.get_residual_sp(tenpy,O,T,A)
+            res = get_residual_sp(tenpy,O,T,A)
         else:
-            res = ck.get_residual(tenpy,T,A)
+            res = get_residual(tenpy,T,A)
+        if tenpy.is_master_proc():
+            print("[",i,"] Residual is", res)
+            # write to csv file
+            if csv_writer is not None:
+                csv_writer.writerow([ i, time_all, res ])
+        t0 = time.time()
+        A = optimizer.step(Regu)
+        t1 = time.time()
+        tenpy.printf("Sweep took", t1-t0,"seconds")
+        time_all += t1-t0
+    tenpy.printf("Naive method took",time_all,"seconds overall")
+
+    return res
+
+def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol_restart_dt=0.01):
+    time_all = 0.
+    optimizer_list = {
+        'DT': CP_DTALS_Optimizer(tenpy,T,A),
+        'PP': CP_PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
+    }
+    optimizer = optimizer_list[method]
+
+    for i in range(num_iter):
+        if sp_res:
+            res = get_residual_sp(tenpy,O,T,A)
+        else:
+            res = get_residual(tenpy,T,A)
         if tenpy.is_master_proc():
             print("[",i,"] Residual is", res)
             # write to csv file
@@ -66,9 +95,9 @@ if __name__ == "__main__":
     tlib = args.tlib
 
     if tlib == "numpy":
-        import numpy_ext as tenpy
+        import backend.numpy_ext as tenpy
     elif tlib == "ctf":
-        import ctf_ext as tenpy
+        import backend.ctf_ext as tenpy
     else:
         print("ERROR: Invalid --tlib input")
 
@@ -101,7 +130,17 @@ if __name__ == "__main__":
         print("ERROR: Invalid --tensor input")
 
     Regu = args.regularization * tenpy.eye(R,R)
+
     A = []
-    for i in range(T.ndim):
-        A.append(tenpy.random((T.shape[i],R)))
-    CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol_restart_dt)
+    if args.hosvd != 0:
+        from Tucker.common_kernels import hosvd
+        A = hosvd(tenpy, T, R, compute_core=False)
+    else:        
+        for i in range(T.ndim):
+            A.append(tenpy.random((T.shape[i],R)))
+
+    if args.decomposition == "CP":
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol_restart_dt)
+    elif args.decomposition == "Tucker":
+        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol_restart_dt)
+
