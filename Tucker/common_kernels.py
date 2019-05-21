@@ -28,7 +28,7 @@ def ttmc(tenpy, T, A, transpose=False):
     """
     dims = T.ndim
     X = T.copy()
-    for i in range(dims):
+    for n in range(dims):
         if transpose:
             str1 = "".join([chr(ord('a')+j) for j in range(n)]) + "y" + "".join([chr(ord('a')+j) for j in range(n+1,dims)])
             str2 = "zy"
@@ -38,7 +38,7 @@ def ttmc(tenpy, T, A, transpose=False):
             str2 = "yz"
             str3 = "".join([chr(ord('a')+j) for j in range(n)]) + "z" + "".join([chr(ord('a')+j) for j in range(n+1,dims)])
         einstr = str1 + "," + str2 + "->" + str3  
-        X = tenpy.einsum(einstr,X,A[i])
+        X = tenpy.einsum(einstr,X,A[n])
     return X
 
 
@@ -67,5 +67,17 @@ def hosvd(tenpy, T, rank, compute_core=False):
     else:
         return A
 
+def get_residual(tenpy,T,A):
+    t0 = time.time()
+    AAT = [None for _ in range(T.ndim)]
+    for i in range(T.ndim):
+        AAT[i] = tenpy.dot(A[i], tenpy.transpose(A[i]))
+    nrm = tenpy.vecnorm(T-ttmc(tenpy, T, AAT, transpose=False))
+    t1 = time.time()
+    tenpy.printf("Residual computation took",t1-t0,"seconds")
+    return nrm
 
+def get_residual_sp(tenpy,O,T,A):
+    # TODO: implementation
+    pass
 

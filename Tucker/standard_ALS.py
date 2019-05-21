@@ -1,35 +1,32 @@
 import numpy as np
 import queue
-from .common_kernels import solve_sys, compute_lin_sysN
+from .common_kernels import n_mode_eigendec
 from als.ALS_optimizer import DTALS_base, PPALS_base
 
-class CP_DTALS_Optimizer(DTALS_base):
+class Tucker_DTALS_Optimizer(DTALS_base):
 
     def _einstr_builder(self,M,s,ii):
-        ci = ""
         nd = M.ndim
-        if len(s) != 1:
-            ci ="R"
-            nd = M.ndim-1
 
-        str1 = "".join([chr(ord('a')+j) for j in range(nd)])+ci
-        str2 = (chr(ord('a')+ii))+"R"
-        str3 = "".join([chr(ord('a')+j) for j in range(nd) if j != ii])+"R"
+        str1 = "".join([chr(ord('a')+j) for j in range(nd)])
+        str2 = (chr(ord('a')+ii)) + "R"
+        str3 = "".join([chr(ord('a')+j) for j in range(ii)]) + "R" + "".join([chr(ord('a')+j) for j in range(ii+1,nd)])
         einstr = str1 + "," + str2 + "->" + str3
         return einstr
 
     def _solve(self,i,Regu,s):
-        return solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), s[-1][1])
+        # NOTE: Regu is not used here
+        return n_mode_eigendec(self.tenpy, s[-1][1], i, rank=self.R, do_flipsign=True)
 
 
-class CP_PPALS_Optimizer(PPALS_base, CP_DTALS_Optimizer):
+class Tucker_PPALS_Optimizer(PPALS_base, Tucker_DTALS_Optimizer):
     """Pairwise perturbation CP decomposition optimizer
 
     """
 
     def __init__(self,tenpy,T,A,tol_restart_dt):
         PPALS_base.__init__(self,tenpy,T,A,tol_restart_dt)
-        CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
+        Tucker_DTALS_Optimizer.__init__(self,tenpy,T,A)
 
     def _get_einstr(self, nodeindex, parent_nodeindex, contract_index):
         """Build the Einstein string for the contraction. 
@@ -47,22 +44,20 @@ class CP_PPALS_Optimizer(PPALS_base, CP_DTALS_Optimizer):
         
         Example:
             When the input tensor has 4 dimensions:
-            _get_einstr(np.array([1,2]), np.array([1,2,3]), 3) == "abcR,cR->abR"
+            _get_einstr(np.array([1,2]), np.array([1,2,3]), 3) == "abcd,cR->abRd"
 
         """
-        ci = ""
-        if len(parent_nodeindex) != self.order:
-            ci = "R"
-
-        str1 = "".join([chr(ord('a')+j) for j in parent_nodeindex]) + ci
+        nd = self.order
+        str1 = "".join([chr(ord('a')+j) for j in range(nd)])
         str2 = (chr(ord('a')+contract_index)) + "R"
-        str3 = "".join([chr(ord('a')+j) for j in nodeindex]) + "R"
+        str3 = "".join([chr(ord('a')+j) for j in range(contract_index)]) + "R" + "".join([chr(ord('a')+j) for j in range(contract_index+1,nd)])
         einstr = str1 + "," + str2 + "->" + str3
         return einstr
 
     def _step_dt(self,Regu):
-        return CP_DTALS_Optimizer.step(self,Regu)
+        return Tucker_DTALS_Optimizer.step(self,Regu)
 
     def _solve_PP(self,i,Regu,N):
-        return solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), N)
+        return n_mode_eigendec(self.tenpy, N, i, rank=self.R, do_flipsign=True)
+
 

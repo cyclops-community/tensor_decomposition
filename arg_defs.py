@@ -155,6 +155,8 @@ def add_general_arguments(parser):
 def get_file_prefix(args):
         return "-".join(filter(None, [
             args.experiment_prefix, 
+            args.decomposition,
+            args.method,
             's' + str(args.s),
             'R' + str(args.R),
             'r' + str(args.r),

@@ -1,6 +1,5 @@
 import numpy as np
 import queue
-from CPD.common_kernels import solve_sys, compute_lin_sysN
 import abc
 
 class DTALS_base(metaclass=abc.ABCMeta):
@@ -9,9 +8,14 @@ class DTALS_base(metaclass=abc.ABCMeta):
         self.tenpy = tenpy
         self.T = T
         self.A = A
+        self.R = A[0].shape[1]
 
     @abc.abstractmethod
-    def einstr_builder(self,M,s,ii):
+    def _einstr_builder(self,M,s,ii):
+        return
+
+    @abc.abstractmethod
+    def _solve(self,i,Regu,s):
         return
 
     def step(self,Regu):
@@ -31,13 +35,13 @@ class DTALS_base(metaclass=abc.ABCMeta):
                 if idx == len(s[-1][0])-1:
                     ii = len(s[-1][0])-2
                 
-                einstr = self.einstr_builder(M,s,ii)
+                einstr = self._einstr_builder(M,s,ii)
 
                 N = self.tenpy.einsum(einstr,M,self.A[ii])
                 ss = s[-1][0].copy()
                 ss.remove(ii)
                 s.append((ss,N))
-            self.A[i] = solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), s[-1][1])
+            self.A[i] = self._solve(i,Regu,s)
         return self.A
 
 
@@ -74,6 +78,10 @@ class PPALS_base(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _step_dt(self,Regu):
+        return
+
+    @abc.abstractmethod
+    def _solve_PP(self,i,Regu,N):
         return
 
     @abc.abstractmethod
@@ -186,14 +194,14 @@ class PPALS_base(metaclass=abc.ABCMeta):
 
             for j in range(i):
                 parentname = self._get_nodename(np.array([j,i]))
-                einstr = self._get_einstr(np.array([i]), np.array([j,i]), np.array([j]))
+                einstr = self._get_einstr(np.array([i]), np.array([j,i]), j)
                 N += self.tenpy.einsum(einstr,self.tree[parentname][1],self.dA[j])
             for j in range(i+1, self.order):
                 parentname = self._get_nodename(np.array([i,j]))
-                einstr = self._get_einstr(np.array([i]), np.array([i,j]), np.array([j]))
+                einstr = self._get_einstr(np.array([i]), np.array([i,j]), j)
                 N += self.tenpy.einsum(einstr,self.tree[parentname][1],self.dA[j])
 
-            output = solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), N)
+            output = self._solve_PP(i,Regu,N)
             self.dA[i] = output - self.A[i]
             self.A[i] = output
 

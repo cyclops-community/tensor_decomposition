@@ -46,15 +46,20 @@ def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol
     return res
 
 def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol_restart_dt=0.01):
+
+    from Tucker.common_kernels import get_residual_sp, get_residual
+    from Tucker.standard_ALS import Tucker_DTALS_Optimizer, Tucker_PPALS_Optimizer
+
     time_all = 0.
     optimizer_list = {
-        'DT': CP_DTALS_Optimizer(tenpy,T,A),
-        'PP': CP_PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
+        'DT': Tucker_DTALS_Optimizer(tenpy,T,A),
+        'PP': Tucker_PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
     }
     optimizer = optimizer_list[method]
 
     for i in range(num_iter):
         if sp_res:
+            # TODO: implement the get residual sparse version
             res = get_residual_sp(tenpy,O,T,A)
         else:
             res = get_residual(tenpy,T,A)
@@ -112,9 +117,15 @@ if __name__ == "__main__":
             ])
 
 
-    if tensor == "random":
-        tenpy.printf("Testing random tensor")
-        [T,O] = stsrs.init_rand(tenpy,order,s,R,sp_frac)
+    if tensor == "random": 
+        if args.decomposition == "CP":
+            tenpy.printf("Testing random tensor")
+            [T,O] = stsrs.init_rand(tenpy,order,s,R,sp_frac)
+        if args.decomposition == "Tucker":
+            tenpy.printf("Testing random tensor")
+            shape = s * np.ones(order).astype(int)
+            T = tenpy.random(shape)
+            O = None
     elif tensor == "mom_cons":
         if tenpy.is_master_proc():
             print("Testing order 4 momentum conservation tensor")
