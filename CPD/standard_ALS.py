@@ -1,5 +1,4 @@
 import numpy as np
-import queue
 from .common_kernels import solve_sys, compute_lin_sysN
 from als.ALS_optimizer import DTALS_base, PPALS_base
 
@@ -32,9 +31,9 @@ class CP_PPALS_Optimizer(PPALS_base, CP_DTALS_Optimizer):
         CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
 
     def _get_einstr(self, nodeindex, parent_nodeindex, contract_index):
-        """Build the Einstein string for the contraction. 
+        """Build the Einstein string for the contraction.
 
-        This function contract the tensor represented by the parent_nodeindex and 
+        This function contract the tensor represented by the parent_nodeindex and
         the matrix represented by the contract_index and output the string.
 
         Args:
@@ -44,7 +43,7 @@ class CP_PPALS_Optimizer(PPALS_base, CP_DTALS_Optimizer):
 
         Returns:
             (string) A string used in self.tenpy.einsum
-        
+
         Example:
             When the input tensor has 4 dimensions:
             _get_einstr(np.array([1,2]), np.array([1,2,3]), 3) == "abcR,cR->abR"
@@ -65,4 +64,3 @@ class CP_PPALS_Optimizer(PPALS_base, CP_DTALS_Optimizer):
 
     def _solve_PP(self,i,Regu,N):
         return solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), N)
-

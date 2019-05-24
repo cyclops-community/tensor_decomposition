@@ -1,8 +1,9 @@
 import numpy as np
-import queue
-import abc
+import Queue as queue
+import abc, six
 
-class DTALS_base(metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class DTALS_base():
 
     def __init__(self,tenpy,T,A):
         self.tenpy = tenpy
@@ -38,18 +39,20 @@ class DTALS_base(metaclass=abc.ABCMeta):
                 einstr = self._einstr_builder(M,s,ii)
 
                 N = self.tenpy.einsum(einstr,M,self.A[ii])
-                ss = s[-1][0].copy()
+                ss = s[-1][0][:]
                 ss.remove(ii)
                 s.append((ss,N))
             self.A[i] = self._solve(i,Regu,s)
         return self.A
 
-class DTLRALS_base(metaclass=abs.ABCMeta):
-    def __init__(self,tenpy,T,A,RHS=None):
+@six.add_metaclass(abc.ABCMeta)
+class DTLRALS_base():
+    def __init__(self,tenpy,T,A,r,RHS=None):
         self.tenpy = tenpy
         self.T = T
         self.A = A
         self.R = A[0].shape[1]
+        self.r = r
         self.RHS = RHS
 
     @abc.abstractmethod
@@ -61,7 +64,7 @@ class DTLRALS_base(metaclass=abs.ABCMeta):
         return
 
     def form_RHS(self):
-        RHS = []
+        self.RHS = []
         q = queue.Queue()
         for i in range(len(self.A)):
             q.put(i)
@@ -81,19 +84,25 @@ class DTLRALS_base(metaclass=abs.ABCMeta):
                 einstr = self._einstr_builder(M,s,ii)
 
                 N = self.tenpy.einsum(einstr,M,self.A[ii])
-                ss = s[-1][0].copy()
+                ss = s[-1][0][:]
                 ss.remove(ii)
                 s.append((ss,N))
-            RHS.append(s[-1][1])
-        self.RHS = RHS
-        return RHS
+            self.RHS.append(s[-1][1])
+        return self.RHS
 
     def update_RHS(self,mode,U,VT):
         assert(self.RHS != None)
         q = queue.Queue()
         for i in range(len(self.A)):
             q.put(i)
+        # Initialization steps
         s = [(list(range(len(self.A))),self.T)]
+        einstr = self._einstr_builder_lr(self.T,s,mode)
+        N = self.tenpy.einsum(einstr,self.T,U)
+        ss = s[-1][0][:]
+        ss.remove(mode)
+        s.append((ss,N))
+
         while not q.empty():
             i = q.get()
             if i == mode:
@@ -110,26 +119,24 @@ class DTLRALS_base(metaclass=abs.ABCMeta):
 
                 einstr = self._einstr_builder_lr(M,s,ii)
 
-                if ii != mode:
-                    N = self.tenpy.einsum(einstr,M,self.A[ii])
-                else:
-                    N = self.tenpy.einsum(einstr,M,U)
-                ss = s[-1][0].copy()
+                N = self.tenpy.einsum(einstr,M,self.A[ii])
+                ss = s[-1][0][:]
                 ss.remove(ii)
                 s.append((ss,N))
             N = s[-1][1]
-            self.RHS[i] = self.tenpy.einsum("iLR,LR->iR",N,VT)
+            self.RHS[i] += self.tenpy.einsum("iLR,LR->iR",N,VT)
 
     def step(self,Regu):
-        assert(self.RHS != None)
+        if self.RHS is None:
+            self.form_RHS()
         for i in range(len(self.A)):
-            U,VT = self._solve(i,Regu,self.RHS)
+            U,VT = self._solve(i,Regu,self.RHS[i],self.r)
             self.A[i] += self.tenpy.einsum("ij,jk->ik",U,VT)
             self.update_RHS(i,U,VT)
         return self.A
 
-
-class PPALS_base(metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class PPALS_base():
     """Pairwise perturbation optimizer
 
     Attributes:
