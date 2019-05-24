@@ -43,10 +43,12 @@ def get_residual_sp3(tenpy,O,T,A,B,C):
     t0 = time.time()
     K = tenpy.TTTP(O,[A,B,C])
     nrm1 = tenpy.vecnorm(K)**2
+    tenpy.printf("Non-zero terms have norm ",nrm1**.5)
     nrm2 = tenpy.sum(tenpy.dot(tenpy.transpose(A),A)*tenpy.dot(tenpy.transpose(B),B)*tenpy.dot(tenpy.transpose(C),C))
     #tenpy.einsum("ia,ib,ja,jb,ka,kb->ab",A,A,B,B,C,C))
     diff = T - K
     nrm3 = tenpy.vecnorm(diff)**2
+    tenpy.printf("Non-zero residual is ", nrm3**.5)
     nrm = (nrm3+nrm2-nrm1)**.5
     t1 = time.time()
     tenpy.printf("Sparse residual computation took",t1-t0,"seconds")

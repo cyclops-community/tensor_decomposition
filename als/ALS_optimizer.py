@@ -34,7 +34,7 @@ class DTALS_base(metaclass=abc.ABCMeta):
                 ii = len(s[-1][0])-1
                 if idx == len(s[-1][0])-1:
                     ii = len(s[-1][0])-2
-                
+
                 einstr = self._einstr_builder(M,s,ii)
 
                 N = self.tenpy.einsum(einstr,M,self.A[ii])
@@ -42,6 +42,90 @@ class DTALS_base(metaclass=abc.ABCMeta):
                 ss.remove(ii)
                 s.append((ss,N))
             self.A[i] = self._solve(i,Regu,s)
+        return self.A
+
+class DTLRALS_base(metaclass=abs.ABCMeta):
+    def __init__(self,tenpy,T,A,RHS=None):
+        self.tenpy = tenpy
+        self.T = T
+        self.A = A
+        self.R = A[0].shape[1]
+        self.RHS = RHS
+
+    @abc.abstractmethod
+    def _einstr_builder(self,M,s,ii):
+        return
+
+    @abc.abstractmethod
+    def _solve(self,i,Regu,s):
+        return
+
+    def form_RHS(self):
+        RHS = []
+        q = queue.Queue()
+        for i in range(len(self.A)):
+            q.put(i)
+        s = [(list(range(len(self.A))),self.T)]
+        while not q.empty():
+            i = q.get()
+            while i not in s[-1][0]:
+                s.pop()
+                assert(len(s) >= 1)
+            while len(s[-1][0]) != 1:
+                M = s[-1][1]
+                idx = s[-1][0].index(i)
+                ii = len(s[-1][0])-1
+                if idx == len(s[-1][0])-1:
+                    ii = len(s[-1][0])-2
+
+                einstr = self._einstr_builder(M,s,ii)
+
+                N = self.tenpy.einsum(einstr,M,self.A[ii])
+                ss = s[-1][0].copy()
+                ss.remove(ii)
+                s.append((ss,N))
+            RHS.append(s[-1][1])
+        self.RHS = RHS
+        return RHS
+
+    def update_RHS(self,mode,U,VT):
+        assert(self.RHS != None)
+        q = queue.Queue()
+        for i in range(len(self.A)):
+            q.put(i)
+        s = [(list(range(len(self.A))),self.T)]
+        while not q.empty():
+            i = q.get()
+            if i == mode:
+                continue
+            while i not in s[-1][0]:
+                s.pop()
+                assert(len(s) >= 1)
+            while len(s[-1][0]) != 1:
+                M = s[-1][1]
+                idx = s[-1][0].index(i)
+                ii = len(s[-1][0])-1
+                if idx == len(s[-1][0])-1:
+                    ii = len(s[-1][0])-2
+
+                einstr = self._einstr_builder_lr(M,s,ii)
+
+                if ii != mode:
+                    N = self.tenpy.einsum(einstr,M,self.A[ii])
+                else:
+                    N = self.tenpy.einsum(einstr,M,U)
+                ss = s[-1][0].copy()
+                ss.remove(ii)
+                s.append((ss,N))
+            N = s[-1][1]
+            self.RHS[i] = self.tenpy.einsum("iLR,LR->iR",N,VT)
+
+    def step(self,Regu):
+        assert(self.RHS != None)
+        for i in range(len(self.A)):
+            U,VT = self._solve(i,Regu,self.RHS)
+            self.A[i] += self.tenpy.einsum("ij,jk->ik",U,VT)
+            self.update_RHS(i,U,VT)
         return self.A
 
 
@@ -57,7 +141,7 @@ class PPALS_base(metaclass=abc.ABCMeta):
         dA (list): list of perturbation terms.
 
     References:
-        Linjian Ma and Edgar Solomonik; Accelerating Alternating Least Squares for Tensor Decomposition 
+        Linjian Ma and Edgar Solomonik; Accelerating Alternating Least Squares for Tensor Decomposition
         by Pairwise Perturbation; arXiv:1811.10573 [math.NA], November 2018.
     """
 
@@ -72,7 +156,7 @@ class PPALS_base(metaclass=abc.ABCMeta):
         self.tol_restart_dt = tol_restart_dt
         self.tree = { '0':(list(range(len(self.A))),self.T) }
         self.order = len(A)
-        self.dA = []  
+        self.dA = []
         for i in range(self.order):
             self.dA.append(tenpy.zeros((self.A[i].shape[0],self.A[i].shape[1])))
 
@@ -86,9 +170,9 @@ class PPALS_base(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _get_einstr(self, nodeindex, parent_nodeindex, contract_index):
-        """Build the Einstein string for the contraction. 
+        """Build the Einstein string for the contraction.
 
-        This function contract the tensor represented by the parent_nodeindex and 
+        This function contract the tensor represented by the parent_nodeindex and
         the matrix represented by the contract_index and output the string.
 
         Args:
@@ -110,8 +194,8 @@ class PPALS_base(metaclass=abc.ABCMeta):
                 the input tensor is not contracted with.
 
         Returns:
-            (string) A string correspoding to the input array. 
-        
+            (string) A string correspoding to the input array.
+
         Example:
             When the input tensor has 4 dimensions:
             _get_nodename(np.array([1,2])) == 'bc'
@@ -122,16 +206,16 @@ class PPALS_base(metaclass=abc.ABCMeta):
         return "".join([chr(ord('a')+j) for j in nodeindex])
 
     def _get_parentnode(self, nodeindex):
-        """Get the parent node based on current node index 
+        """Get the parent node based on current node index
 
         Args:
             nodeindex (numpy array): represents the current tensor.
 
         Returns:
-            parent_nodename (string): representing the key of parent node in self.tree 
+            parent_nodename (string): representing the key of parent node in self.tree
             parent_index (numpy array): the index of parent node
             contract_index (int): the index difference between the current and parent node
-        
+
         """
         fulllist = np.array(range(self.order))
 
@@ -149,7 +233,7 @@ class PPALS_base(metaclass=abc.ABCMeta):
 
         Args:
             nodeindex (numpy array): The target node index
-        
+
         """
         nodename = self._get_nodename(nodeindex)
         parent_nodename, parent_nodeindex, contract_index = self._get_parentnode(nodeindex)
@@ -163,10 +247,10 @@ class PPALS_base(metaclass=abc.ABCMeta):
         self.tree[nodename] = (nodeindex,N)
 
     def _initialize_tree(self):
-        """Initialize self.tree       
+        """Initialize self.tree
         """
         self.tree = { '0':(list(range(len(self.A))),self.T) }
-        self.dA = []  
+        self.dA = []
         for i in range(self.order):
             self.dA.append(self.tenpy.zeros((self.A[i].shape[0],self.A[i].shape[1])))
 
@@ -185,7 +269,7 @@ class PPALS_base(metaclass=abc.ABCMeta):
 
         Returns:
             A (list): list of decomposed matrices
-        
+
         """
         print("***** pairwise perturbation step *****")
         for i in range(self.order):
@@ -225,7 +309,7 @@ class PPALS_base(metaclass=abc.ABCMeta):
 
         Returns:
             A (list): list of decomposed matrices
-        
+
         """
         A_prev = self.A.copy()
         self._step_dt(Regu) #super(PPALS_Optimizer, self).step(Regu)
@@ -248,7 +332,7 @@ class PPALS_base(metaclass=abc.ABCMeta):
 
         Returns:
             A (list): list of decomposed matrices
-        
+
         """
         if self.pp:
             if self.reinitialize_tree:
