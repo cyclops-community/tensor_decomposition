@@ -29,9 +29,9 @@ class CP_DTLRALS_Optimizer(DTLRALS_base):
             ci = ""
             nd = M.ndim
 
-        str1 = "".join([chr(ord('a')+j) for j in range(nd)])+ci
+        str1 = "".join([chr(ord('a')+j) for j in s[-1][0]])+ci
         str2 = (chr(ord('a')+ii))
-        str3 = "".join([chr(ord('a')+j) for j in range(nd) if j != ii])
+        str3 = "".join([chr(ord('a')+j) for j in s[-1][0] if j != ii])
 
         if len(s) >= 2:
             str3 += "LR"
@@ -43,5 +43,7 @@ class CP_DTLRALS_Optimizer(DTLRALS_base):
         einstr = str1 + "," + str2 + "->" + str3
         return einstr
 
-    def _solve(self,i,Regu,RHS,r):
-        return solve_sys_lowr(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), RHS,r)
+    def _solve(self,i,Regu):
+        G = compute_lin_sysN(self.tenpy,self.A,i,Regu)
+        ERHS = self.RHS[i] - self.tenpy.dot(self.A[i],G)
+        return solve_sys_lowr(self.tenpy,G,ERHS,self.r)

@@ -47,13 +47,17 @@ def CP_ALS(tenpy,A,T,O,r,num_iter,num_lowr_init_iter,sp_res,csv_writer=None,Regu
 
     optimizer = optimizer_list[method]
 
-    for i in range(num_iter-num_lowr_init_iter):
+    total_iter = num_iter - (method=='DTLR') * num_lowr_init_iter
+    for i in range(total_iter):
         if sp_res:
             res = get_residual_sp(tenpy,O,T,A)
         else:
             res = get_residual(tenpy,T,A)
         if tenpy.is_master_proc():
-            print("[",i+num_lowr_init_iter,"] Residual is", res)
+            if method == 'DTLR':
+                print("[",i+num_lowr_init_iter,"] Residual is", res)
+            else:
+                print("[",i,"] Residual is", res)
             # write to csv file
             if csv_writer is not None:
                 csv_writer.writerow([ i, time_all, res ])

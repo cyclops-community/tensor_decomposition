@@ -98,6 +98,7 @@ class DTLRALS_base():
         # Initialization steps
         s = [(list(range(len(self.A))),self.T)]
         einstr = self._einstr_builder_lr(self.T,s,mode)
+        #print("Initializing einstr is ",einstr)
         N = self.tenpy.einsum(einstr,self.T,U)
         ss = s[-1][0][:]
         ss.remove(mode)
@@ -105,6 +106,8 @@ class DTLRALS_base():
 
         while not q.empty():
             i = q.get()
+            #print("mode is ",mode)
+            #print("i is ",i)
             if i == mode:
                 continue
             while i not in s[-1][0]:
@@ -113,24 +116,28 @@ class DTLRALS_base():
             while len(s[-1][0]) != 1:
                 M = s[-1][1]
                 idx = s[-1][0].index(i)
-                ii = len(s[-1][0])-1
+                ii = s[-1][0][-1]
                 if idx == len(s[-1][0])-1:
-                    ii = len(s[-1][0])-2
+                    ii = s[-1][0][-2]
 
                 einstr = self._einstr_builder_lr(M,s,ii)
-
+                #print(einstr)
                 N = self.tenpy.einsum(einstr,M,self.A[ii])
                 ss = s[-1][0][:]
+                #print("ii is ",ii)
+                #print("ss before remove is ",ss)
                 ss.remove(ii)
+                #print("ss after remove is ",ss)
                 s.append((ss,N))
             N = s[-1][1]
             self.RHS[i] += self.tenpy.einsum("iLR,LR->iR",N,VT)
+            #print("finish updating RHS of ",i)
 
     def step(self,Regu):
         if self.RHS is None:
             self.form_RHS()
         for i in range(len(self.A)):
-            U,VT = self._solve(i,Regu,self.RHS[i],self.r)
+            U,VT = self._solve(i,Regu)
             self.A[i] += self.tenpy.einsum("ij,jk->ik",U,VT)
             self.update_RHS(i,U,VT)
         return self.A
