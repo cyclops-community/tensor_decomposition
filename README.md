@@ -1,4 +1,22 @@
-# Lowrank-ALS
+## Python Tensor Decomposition Algorithms
+
+### TODOs:
+
+- [ ] Documentation based on sphinx conventions
+
+- [ ] Test cases development
+
+- [ ] Modularize argument parsers related to specific methods
+
+- [ ] Randomized CP/Tucker implementation
+
+- [ ] Multigrid methods implementation
+
+- [ ] Tensor train implementation
+
+- [ ] Postprocessing tools (save/load parameters, eigenvalue visualization of perturbations)
+
+
 
 ### Note:
 Currectly the code is only tested under Python3. 
