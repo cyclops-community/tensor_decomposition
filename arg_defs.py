@@ -120,7 +120,7 @@ def add_general_arguments(parser):
         '--tensor',
         default="random",
         metavar='string',
-        help='choose tensor to test, available: random, mom_cons, and mom_cons_sv (default: random)')
+        help='choose tensor to test, available: random, mom_cons, mom_cons_sv, and amino (default: random)')
     parser.add_argument(
         '--tlib',
         default="ctf",
@@ -142,6 +142,12 @@ def add_general_arguments(parser):
         default=0,
         metavar='int',
         help='initialize factor matrices with hosvd or not (default: 0)')
+    parser.add_argument(
+        '--seed',
+        type=int,
+        default=1,
+        metavar='int',
+        help='random seed')
     parser.add_argument(
         '--tol-restart-dt',
         default=0.01,

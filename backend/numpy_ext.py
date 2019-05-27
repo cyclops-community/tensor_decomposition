@@ -2,6 +2,9 @@ import numpy as np
 import numpy.linalg as la
 import scipy.linalg as sla
 
+def name():
+    return 'numpy'
+
 def TTTP(T, A):
     T_inds = "".join([chr(ord('a')+i) for i in range(T.ndim)])
     einstr = ""

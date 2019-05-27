@@ -6,7 +6,8 @@ import argparse
 import csv
 from pathlib import Path
 from os.path import dirname, join
-import tensors.synthetic_tensors as stsrs
+import tensors.synthetic_tensors as synthetic_tensors
+import tensors.real_tensors as real_tensors
 import argparse
 import arg_defs as arg_defs
 import csv
@@ -19,6 +20,8 @@ def CP_ALS(tenpy,A,T,O,r,num_iter,num_lowr_init_iter,sp_res,csv_writer=None,Regu
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
+
+    normT = tenpy.vecnorm(T)
 
     time_all = 0.
     optimizer_list = {
@@ -53,11 +56,12 @@ def CP_ALS(tenpy,A,T,O,r,num_iter,num_lowr_init_iter,sp_res,csv_writer=None,Regu
             res = get_residual_sp(tenpy,O,T,A)
         else:
             res = get_residual(tenpy,T,A)
+        fitness = 1-res/normT
         if tenpy.is_master_proc():
             if method == 'DTLR':
                 print("[",i+num_lowr_init_iter,"] Residual is", res)
             else:
-                print("[",i,"] Residual is", res)
+                print("[",i,"] Residual is", res, "fitness is: ", fitness)
             # write to csv file
             if csv_writer is not None:
                 csv_writer.writerow([ i, time_all, res ])
@@ -142,12 +146,12 @@ if __name__ == "__main__":
                 'iterations', 'time', 'residual'
             ])
 
-    tenpy.seed(1)
+    tenpy.seed(args.seed)
 
     if tensor == "random":
         if args.decomposition == "CP":
             tenpy.printf("Testing random tensor")
-            [T,O] = stsrs.init_rand(tenpy,order,s,R,sp_frac)
+            [T,O] = synthetic_tensors.init_rand(tenpy,order,s,R,sp_frac)
         if args.decomposition == "Tucker":
             tenpy.printf("Testing random tensor")
             shape = s * np.ones(order).astype(int)
@@ -156,16 +160,19 @@ if __name__ == "__main__":
     elif tensor == "mom_cons":
         if tenpy.is_master_proc():
             print("Testing order 4 momentum conservation tensor")
-        T = stsrs.init_mom_cons(tenpy,s)
+        T = synthetic_tensors.init_mom_cons(tenpy,s)
         O = None
         sp_res = False
     elif tensor == "mom_cons_sv":
         tenpy.printf("Testing order 3 singular vectors of unfolding of momentum conservation tensor")
-        T = stsrs.init_mom_cons_sv(tenpy,s)
+        T = synthetic_tensors.init_mom_cons_sv(tenpy,s)
         O = None
         sp_res = False
+    elif tensor == "amino":
+        T = real_tensors.amino_acids(tenpy)
+        O = None
     else:
-        print("ERROR: Invalid --tensor input")
+        tenpy.printf("ERROR: Invalid --tensor input")
 
     Regu = args.regularization * tenpy.eye(R,R)
 

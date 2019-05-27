@@ -1,5 +1,11 @@
 import ctf
 
+def name():
+    return 'ctf'
+
+def from_nparray(arr):
+    return ctf.from_nparray(arr)
+
 def TTTP(T, A):
     return ctf.TTTP(T, A)
 
