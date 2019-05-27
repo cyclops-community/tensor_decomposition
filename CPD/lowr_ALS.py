@@ -47,3 +47,10 @@ class CP_DTLRALS_Optimizer(DTLRALS_base):
         G = compute_lin_sysN(self.tenpy,self.A,i,Regu)
         ERHS = self.RHS[i] - self.tenpy.dot(self.A[i],G)
         return solve_sys_lowr(self.tenpy,G,ERHS,self.r)
+
+    def _solve_by_full_rank(self,i,Regu):
+        A_new = solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), self.RHS[i])
+        dA = A_new - self.A[i]
+        [U,S,VT] = self.tenpy.svd(dA,self.r)
+        VT = self.tenpy.einsum("i,ij->ij",S,VT)
+        return [U,VT]

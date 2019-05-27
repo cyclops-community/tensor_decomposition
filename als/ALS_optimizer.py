@@ -63,6 +63,10 @@ class DTLRALS_base():
     def _solve(self,i,Regu,s):
         return
 
+    @abc.abstractmethod
+    def _solve_by_full_rank(self,i,Regu):
+        return
+
     def form_RHS(self):
         self.RHS = []
         q = queue.Queue()
@@ -137,7 +141,7 @@ class DTLRALS_base():
         if self.RHS is None:
             self.form_RHS()
         for i in range(len(self.A)):
-            U,VT = self._solve(i,Regu)
+            [U,VT] = self._solve(i,Regu)
             self.A[i] += self.tenpy.einsum("ij,jk->ik",U,VT)
             self.update_RHS(i,U,VT)
         return self.A
