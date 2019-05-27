@@ -171,8 +171,12 @@ if __name__ == "__main__":
     elif tensor == "amino":
         T = real_tensors.amino_acids(tenpy)
         O = None
+    elif tensor == "coil100":
+        T = real_tensors.coil_100(tenpy)
+        O = None
     else:
         tenpy.printf("ERROR: Invalid --tensor input")
+    tenpy.printf("The shape of the input tensor is: ", T.shape)
 
     Regu = args.regularization * tenpy.eye(R,R)
 

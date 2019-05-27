@@ -120,7 +120,7 @@ def add_general_arguments(parser):
         '--tensor',
         default="random",
         metavar='string',
-        help='choose tensor to test, available: random, mom_cons, mom_cons_sv, and amino (default: random)')
+        help='choose tensor to test, available: random, mom_cons, mom_cons_sv, amino, coil100 (default: random)')
     parser.add_argument(
         '--tlib',
         default="ctf",
