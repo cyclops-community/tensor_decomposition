@@ -11,7 +11,8 @@ def TTTP(T, A):
             einstr += chr(ord('a')+i) + chr(ord('a')+T.ndim) + ','
             A2.append(A[i])
     einstr += T_inds + "->" + T_inds
-    return np.einsum(einstr, *A2, T)
+    A2.append(T)
+    return np.einsum(einstr, *A2)
 
 def is_master_proc():
     return True
@@ -58,12 +59,9 @@ def solve_tri(A, B, lower=True, from_left=True, transp_L=False):
     else:
         return sla.solve_triangular(A, B, lower)
 
-def einsum(string, *args, out=None):
-    if out is None:
-        return np.einsum(string, *args)
-    else:
-        out = np.einsum(string, *args)
-        return out
+def einsum(string, *args):
+    out = np.einsum(string, *args)
+    return out
 
 def ones(shape):
     return np.ones(shape)

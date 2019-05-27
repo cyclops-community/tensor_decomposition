@@ -142,6 +142,7 @@ if __name__ == "__main__":
                 'iterations', 'time', 'residual'
             ])
 
+    tenpy.seed(1)
 
     if tensor == "random":
         if args.decomposition == "CP":
