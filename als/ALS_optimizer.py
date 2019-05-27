@@ -1,6 +1,9 @@
 import numpy as np
-import Queue as queue
 import abc, six
+try:
+    import Queue as queue
+except ImportError:
+    import queue
 
 @six.add_metaclass(abc.ABCMeta)
 class DTALS_base():
