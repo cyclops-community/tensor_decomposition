@@ -21,7 +21,7 @@ def printf(*string):
 
 def tensor(shape, sp, *args):
     return ctf.tensor(shape, sp, *args)
-        
+
 def sparse_random(shape, begin, end, sp_frac):
     tensor = ctf.tensor(shape, sp=True)
     tensor.fill_sp_random(begin, end, sp_frac)
@@ -33,8 +33,8 @@ def vecnorm(T):
 def dot(A,B):
     return ctf.dot(A,B)
 
-def svd(A):
-    return ctf.svd(A)
+def svd(A,r=None):
+    return ctf.svd(A,r)
 
 def svd_rand(A,r):
     return ctf.svd_rand(A,r)
