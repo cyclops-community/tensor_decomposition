@@ -174,6 +174,9 @@ if __name__ == "__main__":
     elif tensor == "coil100":
         T = real_tensors.coil_100(tenpy)
         O = None
+    elif tensor == "timelapse":
+        T = real_tensors.time_lapse_images(tenpy)
+        O = None
     else:
         tenpy.printf("ERROR: Invalid --tensor input")
     tenpy.printf("The shape of the input tensor is: ", T.shape)
