@@ -73,7 +73,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         fitness = 1-res/norm_input
         tenpy.printf(method, "with hosvd, residual is", res, "fitness is: ", fitness)
 
-    tenpy.printf(method+" method with hosvd took",time_all,"seconds overall")
+    tenpy.printf(method+" method took",time_all,"seconds overall")
     return res
 
 def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',args=None):
