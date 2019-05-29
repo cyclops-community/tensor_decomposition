@@ -120,21 +120,42 @@ def add_general_arguments(parser):
         '--tensor',
         default="random",
         metavar='string',
+        choices=[
+            'random', 
+            'mom_cons', 
+            'mom_cons_sv',
+            'amino',
+            'coil100',
+            'timelapse',
+            ],
         help='choose tensor to test, available: random, mom_cons, mom_cons_sv, amino, coil100, timelapse (default: random)')
     parser.add_argument(
         '--tlib',
         default="ctf",
         metavar='string',
+        choices=[
+            'ctf', 
+            'numpy', 
+            ],
         help='choose tensor library teo test, choose between numpy and ctf (default: ctf)')
     parser.add_argument(
         '--method',
         default="DT",
         metavar='string',
+        choices=[
+            'DT', 
+            'DTLR', 
+            'PP',
+            ],
         help='choose the optimization method: DT, PP, DTLR (default: DT)')
     parser.add_argument(
         '--decomposition',
         default="CP",
         metavar='string',
+        choices=[
+            'CP', 
+            'Tucker', 
+            ],
         help='choose the decomposition method: CP, Tucker (default: CP)')
     parser.add_argument(
         '--hosvd',
@@ -142,6 +163,11 @@ def add_general_arguments(parser):
         default=0,
         metavar='int',
         help='initialize factor matrices with hosvd or not (default: 0)')
+    parser.add_argument(
+        '--hosvd-core-dim',
+        type=int,
+        nargs='+',
+        help='hosvd core dimensitionality.')
     parser.add_argument(
         '--seed',
         type=int,
