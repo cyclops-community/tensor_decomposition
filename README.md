@@ -6,7 +6,7 @@
 
 - [ ] Test cases development
 
-- [ ] Modularize argument parsers related to specific methods
+- [x] Modularize argument parsers related to specific methods
 
 - [ ] Randomized CP/Tucker implementation
 
@@ -16,6 +16,7 @@
 
 - [ ] Postprocessing tools (save/load parameters, eigenvalue visualization of perturbations)
 
+- [ ] Implement sliced als version
 
 
 ### Note:

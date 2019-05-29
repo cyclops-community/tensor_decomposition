@@ -1,8 +1,16 @@
 from .common_kernels import solve_sys, compute_lin_sysN
 from als.ALS_optimizer import DTALS_base, DTLRALS_base, PPALS_base
+from .standard_ALS import CP_DTALS_Optimizer
 from .lowr_ALS3 import solve_sys_lowr
 
-class CP_DTLRALS_Optimizer(DTLRALS_base):
+class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
+
+    def __init__(self,tenpy,T,A,args):
+        DTLRALS_base.__init__(self,tenpy,T,A,args)
+        CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
+
+    def _step_dt_subroutine(self,Regu):
+        return CP_DTALS_Optimizer.step(self,Regu)
 
     def _einstr_builder(self,M,s,ii):
         ci = ""
@@ -43,7 +51,7 @@ class CP_DTLRALS_Optimizer(DTLRALS_base):
         einstr = str1 + "," + str2 + "->" + str3
         return einstr
 
-    def _solve(self,i,Regu):
+    def _solve_DTLR(self,i,Regu):
         G = compute_lin_sysN(self.tenpy,self.A,i,Regu)
         ERHS = self.RHS[i] - self.tenpy.dot(self.A[i],G)
         return solve_sys_lowr(self.tenpy,G,ERHS,self.r)

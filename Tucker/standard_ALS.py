@@ -24,8 +24,8 @@ class Tucker_PPALS_Optimizer(PPALS_base, Tucker_DTALS_Optimizer):
 
     """
 
-    def __init__(self,tenpy,T,A,tol_restart_dt):
-        PPALS_base.__init__(self,tenpy,T,A,tol_restart_dt)
+    def __init__(self,tenpy,T,A,args):
+        PPALS_base.__init__(self,tenpy,T,A,args)
         Tucker_DTALS_Optimizer.__init__(self,tenpy,T,A)
 
     def _get_einstr(self, nodeindex, parent_nodeindex, contract_index):

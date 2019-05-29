@@ -130,7 +130,7 @@ def add_general_arguments(parser):
         '--method',
         default="DT",
         metavar='string',
-        help='choose the optimization method: DT, PP (default: DT)')
+        help='choose the optimization method: DT, PP, DTLR (default: DT)')
     parser.add_argument(
         '--decomposition',
         default="CP",
@@ -148,6 +148,12 @@ def add_general_arguments(parser):
         default=1,
         metavar='int',
         help='random seed')
+    parser.add_argument(
+        '--tol',
+        default=1e-5,
+        type=float,
+        metavar='float',
+        help='Tolerance for stopping the iteration.')
     parser.add_argument(
         '--tol-restart-dt',
         default=0.01,

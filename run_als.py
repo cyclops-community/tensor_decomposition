@@ -15,7 +15,7 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,T,O,r,num_iter,num_lowr_init_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol_restart_dt=0.01):
+def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol=1e-5,args=None):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
@@ -26,55 +26,38 @@ def CP_ALS(tenpy,A,T,O,r,num_iter,num_lowr_init_iter,sp_res,csv_writer=None,Regu
     time_all = 0.
     optimizer_list = {
         'DT': CP_DTALS_Optimizer(tenpy,T,A),
-        'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,r),
-        'PP': CP_PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
+        'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
+        'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
     }
-
-    if method == "DTLR":
-        optimizer = optimizer_list['DT']
-        for i in range(num_lowr_init_iter):
-            if sp_res:
-                res = get_residual_sp(tenpy,O,T,A)
-            else:
-                res = get_residual(tenpy,T,A)
-            if tenpy.is_master_proc():
-                print("[",i,"] Residual is", res)
-                # write to csv file
-                if csv_writer is not None:
-                    csv_writer.writerow([ i, time_all, res ])
-            t0 = time.time()
-            A = optimizer.step(Regu)
-            t1 = time.time()
-            tenpy.printf("Init Sweep took", t1-t0,"seconds")
-            time_all += t1-t0
-
     optimizer = optimizer_list[method]
 
-    total_iter = num_iter - (method=='DTLR') * num_lowr_init_iter
-    for i in range(total_iter):
+    fitness_old = 0
+    for i in range(num_iter):
         if sp_res:
             res = get_residual_sp(tenpy,O,T,A)
         else:
             res = get_residual(tenpy,T,A)
         fitness = 1-res/normT
+
         if tenpy.is_master_proc():
-            if method == 'DTLR':
-                print("[",i+num_lowr_init_iter,"] Residual is", res)
-            else:
-                print("[",i,"] Residual is", res, "fitness is: ", fitness)
+            print("[",i,"] Residual is", res, "fitness is: ", fitness)
             # write to csv file
             if csv_writer is not None:
                 csv_writer.writerow([ i, time_all, res ])
+
         t0 = time.time()
         A = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
-    tenpy.printf(method+" method took",time_all,"seconds overall")
+        if abs(fitness_old-fitness) < tol:
+            break
+        fitness_old = fitness
 
+    tenpy.printf(method+" method took",time_all,"seconds overall")
     return res
 
-def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol_restart_dt=0.01):
+def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',args=None):
 
     from Tucker.common_kernels import get_residual_sp, get_residual
     from Tucker.standard_ALS import Tucker_DTALS_Optimizer, Tucker_PPALS_Optimizer
@@ -82,7 +65,7 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT'
     time_all = 0.
     optimizer_list = {
         'DT': Tucker_DTALS_Optimizer(tenpy,T,A),
-        'PP': Tucker_PPALS_Optimizer(tenpy,T,A,tol_restart_dt),
+        'PP': Tucker_PPALS_Optimizer(tenpy,T,A,args),
     }
     optimizer = optimizer_list[method]
 
@@ -192,6 +175,6 @@ if __name__ == "__main__":
             A.append(tenpy.random((T.shape[i],R)))
 
     if args.decomposition == "CP":
-        CP_ALS(tenpy,A,T,O,r,num_iter,num_lowr_init_iter,sp_res,csv_writer,Regu,args.method,args.tol_restart_dt)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol,args)
     elif args.decomposition == "Tucker":
-        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol_restart_dt)
+        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args)

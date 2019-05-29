@@ -50,24 +50,30 @@ class DTALS_base():
 
 @six.add_metaclass(abc.ABCMeta)
 class DTLRALS_base():
-    def __init__(self,tenpy,T,A,r,RHS=None):
+    def __init__(self,tenpy,T,A,args,RHS=None):
         self.tenpy = tenpy
         self.T = T
         self.A = A
         self.R = A[0].shape[1]
-        self.r = r
+        self.r = args.r
         self.RHS = RHS
+        self.iterations = 0
+        self.num_lowr_init_iter = args.num_lowr_init_iter
 
     @abc.abstractmethod
     def _einstr_builder(self,M,s,ii):
         return
 
     @abc.abstractmethod
-    def _solve(self,i,Regu,s):
+    def _solve_DTLR(self,i,Regu,s):
         return
 
     @abc.abstractmethod
     def _solve_by_full_rank(self,i,Regu):
+        return
+
+    @abc.abstractmethod
+    def _step_dt_subroutine(self,Regu):
         return
 
     def form_RHS(self):
@@ -141,12 +147,17 @@ class DTLRALS_base():
             #print("finish updating RHS of ",i)
 
     def step(self,Regu):
-        if self.RHS is None:
-            self.form_RHS()
-        for i in range(len(self.A)):
-            [U,VT] = self._solve(i,Regu)
-            self.A[i] += self.tenpy.einsum("ij,jk->ik",U,VT)
-            self.update_RHS(i,U,VT)
+        self.iterations += 1
+        if self.iterations <= self.num_lowr_init_iter:
+            return self._step_dt_subroutine(Regu)
+        else: 
+            print("***** dimension tree low rank step *****")
+            if self.RHS is None:
+                self.form_RHS()
+            for i in range(len(self.A)):
+                [U,VT] = self._solve_DTLR(i,Regu)
+                self.A[i] += self.tenpy.einsum("ij,jk->ik",U,VT)
+                self.update_RHS(i,U,VT)
         return self.A
 
 @six.add_metaclass(abc.ABCMeta)
@@ -166,7 +177,7 @@ class PPALS_base():
         by Pairwise Perturbation; arXiv:1811.10573 [math.NA], November 2018.
     """
 
-    def __init__(self,tenpy,T,A,tol_restart_dt):
+    def __init__(self,tenpy,T,A,args):
 
         self.tenpy = tenpy
         self.T = T
@@ -174,7 +185,7 @@ class PPALS_base():
 
         self.pp = False
         self.reinitialize_tree = False
-        self.tol_restart_dt = tol_restart_dt
+        self.tol_restart_dt = args.tol_restart_dt
         self.tree = { '0':(list(range(len(self.A))),self.T) }
         self.order = len(A)
         self.dA = []
@@ -332,8 +343,8 @@ class PPALS_base():
             A (list): list of decomposed matrices
 
         """
-        A_prev = self.A.copy()
-        self._step_dt(Regu) #super(PPALS_Optimizer, self).step(Regu)
+        A_prev = self.A[:]
+        self._step_dt(Regu) 
         num_smallupdate = 0
         for i in range(self.order):
             self.dA[i] = self.A[i] - A_prev[i]
