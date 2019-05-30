@@ -77,6 +77,9 @@ class DTLRALS_base():
         return
 
     def form_RHS(self):
+        """Compute the right hand sides of all ALS subproblems.
+
+        """
         self.RHS = []
         q = queue.Queue()
         for i in range(len(self.A)):
@@ -104,6 +107,13 @@ class DTLRALS_base():
         return self.RHS
 
     def update_RHS(self,mode,U,VT):
+        """Update the right hand side of all subproblems by using the low rank updates.
+
+        Args:
+            mode (int): the mode whose factor matrix got low rank update
+            U (tenpy matrix): the first factor of the low rank update
+            VT (tenpy matrix): the second factor of the low rank update
+        """
         assert(self.RHS != None)
         q = queue.Queue()
         for i in range(len(self.A)):
@@ -119,8 +129,6 @@ class DTLRALS_base():
 
         while not q.empty():
             i = q.get()
-            #print("mode is ",mode)
-            #print("i is ",i)
             if i == mode:
                 continue
             while i not in s[-1][0]:
@@ -134,23 +142,27 @@ class DTLRALS_base():
                     ii = s[-1][0][-2]
 
                 einstr = self._einstr_builder_lr(M,s,ii)
-                #print(einstr)
                 N = self.tenpy.einsum(einstr,M,self.A[ii])
                 ss = s[-1][0][:]
-                #print("ii is ",ii)
-                #print("ss before remove is ",ss)
                 ss.remove(ii)
-                #print("ss after remove is ",ss)
                 s.append((ss,N))
             N = s[-1][1]
             self.RHS[i] += self.tenpy.einsum("iLR,LR->iR",N,VT)
-            #print("finish updating RHS of ",i)
 
     def step(self,Regu):
+        """Perform one full sweep of low rank update method.
+
+        Args:
+            Regu (tenpy matrix): regularization factor.
+
+        Returns:
+            list: a list of factor matrices after one full sweep.
+
+        """
         self.iterations += 1
         if self.iterations <= self.num_lowr_init_iter:
             return self._step_dt_subroutine(Regu)
-        else: 
+        else:
             print("***** dimension tree low rank step *****")
             if self.RHS is None:
                 self.form_RHS()
@@ -344,7 +356,7 @@ class PPALS_base():
 
         """
         A_prev = self.A[:]
-        self._step_dt(Regu) 
+        self._step_dt(Regu)
         num_smallupdate = 0
         for i in range(self.order):
             self.dA[i] = self.A[i] - A_prev[i]
