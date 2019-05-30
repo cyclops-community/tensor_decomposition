@@ -15,11 +15,18 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol=1e-5,args=None):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol=1e-5,hosvd=0,args=None):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
+
+    T, transformer = None, None
+    if args.hosvd != 0:
+        from Tucker.common_kernels import hosvd
+        transformer, T = hosvd(tenpy, input_tensor, args.hosvd_core_dim, compute_core=True)
+    else:
+        T = input_tensor
 
     normT = tenpy.vecnorm(T)
 
@@ -53,6 +60,18 @@ def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol
         if abs(fitness_old-fitness) < tol:
             break
         fitness_old = fitness
+
+    if args.hosvd != 0:
+        A_fullsize = []
+        norm_input = tenpy.vecnorm(input_tensor)
+        for i in range(T.ndim):
+            A_fullsize.append(tenpy.dot(transformer[i],A[i]))
+        if sp_res:
+            res = get_residual_sp(tenpy,O,input_tensor,A_fullsize)
+        else:
+            res = get_residual(tenpy,input_tensor,A_fullsize)
+        fitness = 1-res/norm_input
+        tenpy.printf(method, "with hosvd, residual is", res, "fitness is: ", fitness)
 
     tenpy.printf(method+" method took",time_all,"seconds overall")
     return res
@@ -116,8 +135,6 @@ if __name__ == "__main__":
         import backend.numpy_ext as tenpy
     elif tlib == "ctf":
         import backend.ctf_ext as tenpy
-    else:
-        print("ERROR: Invalid --tlib input")
 
     if tenpy.is_master_proc():
         # print the arguments
@@ -141,8 +158,7 @@ if __name__ == "__main__":
             T = tenpy.random(shape)
             O = None
     elif tensor == "mom_cons":
-        if tenpy.is_master_proc():
-            print("Testing order 4 momentum conservation tensor")
+        tenpy.printf("Testing order 4 momentum conservation tensor")
         T = synthetic_tensors.init_mom_cons(tenpy,s)
         O = None
         sp_res = False
@@ -160,21 +176,24 @@ if __name__ == "__main__":
     elif tensor == "timelapse":
         T = real_tensors.time_lapse_images(tenpy)
         O = None
-    else:
-        tenpy.printf("ERROR: Invalid --tensor input")
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
     Regu = args.regularization * tenpy.eye(R,R)
 
     A = []
     if args.hosvd != 0:
-        from Tucker.common_kernels import hosvd
-        A = hosvd(tenpy, T, R, compute_core=False)
+        if args.decomposition == "CP":
+            for i in range(T.ndim):
+                A.append(tenpy.random((args.hosvd_core_dim[i],R)))
+        elif args.decomposition == "Tucker":
+            from Tucker.common_kernels import hosvd
+            A = hosvd(tenpy, T, args.hosvd_core_dim, compute_core=False)
     else:
         for i in range(T.ndim):
             A.append(tenpy.random((T.shape[i],R)))
 
     if args.decomposition == "CP":
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol,args)
+        # TODO: it doesn't support sparse calculation with hosvd here
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol,args.hosvd,args)
     elif args.decomposition == "Tucker":
-        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args)
+        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args)

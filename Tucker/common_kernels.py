@@ -53,14 +53,14 @@ def flipsign(tenpy, U):
             U[:, i] = -U[:, i]
     return U
 
-def hosvd(tenpy, T, rank, compute_core=False):
+def hosvd(tenpy, T, ranks, compute_core=False):
     """
     higher order svd of tensor T
     """
     A = [None for _ in range(T.ndim)]
     dims = range(T.ndim)
     for d in dims:
-        A[d] = n_mode_eigendec(tenpy, T, d, rank)
+        A[d] = n_mode_eigendec(tenpy, T, d, ranks[d])
     if compute_core:
         core = ttmc(tenpy, T, A, transpose=False)
         return A, core

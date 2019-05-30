@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import abc, six
 try:
     import Queue as queue
@@ -41,7 +42,12 @@ class DTALS_base():
 
                 einstr = self._einstr_builder(M,s,ii)
 
+                # t0 = time.time()
                 N = self.tenpy.einsum(einstr,M,self.A[ii])
+                # t1 = time.time()
+                # self.tenpy.printf(einstr)
+                # self.tenpy.printf("!!!!!!!! Dimension tree initialize tree took", t1-t0,"seconds")
+
                 ss = s[-1][0][:]
                 ss.remove(ii)
                 s.append((ss,N))
@@ -264,9 +270,9 @@ class PPALS_base():
         fulllist = np.array(range(self.order))
 
         comp_index = np.setdiff1d(fulllist, nodeindex)
-        comp_parent_index = comp_index[:-1]
+        comp_parent_index = comp_index[1:] #comp_index[:-1]
 
-        contract_index = comp_index[-1]
+        contract_index = comp_index[0] #comp_index[-1]
         parent_index = np.setdiff1d(fulllist, comp_parent_index)
         parent_nodename = self._get_nodename(parent_index)
 
@@ -286,9 +292,12 @@ class PPALS_base():
         if not parent_nodename in self.tree:
             self._initialize_treenode(parent_nodeindex)
 
+        # t0 = time.time()
         N = self.tenpy.einsum(einstr,self.tree[parent_nodename][1],self.A[contract_index])
-
+        # t1 = time.time()
         self.tree[nodename] = (nodeindex,N)
+        # self.tenpy.printf(einstr)
+        # self.tenpy.printf("!!!!!!!! pairwise perturbation initialize tree took", t1-t0,"seconds")
 
     def _initialize_tree(self):
         """Initialize self.tree
