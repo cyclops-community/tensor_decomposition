@@ -38,8 +38,13 @@ def vecnorm(T):
 def dot(A,B):
     return np.dot(A,B)
 
-def svd(A):
-    return la.svd(A)
+def svd(A,r=None):
+    U,s,VT = la.svd(A)
+    if r is not None:
+        U = U[:,:r]
+        s = s[:r]
+        VT = VT[:r,:]
+    return U,s,VT
 
 def svd_rand(A):
     return la.svd(A)
