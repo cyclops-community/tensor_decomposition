@@ -10,13 +10,21 @@
 
 - [ ] Randomized CP/Tucker implementation
 
-- [ ] Multigrid methods implementation
+- [ ] [Multigrid methods implementation](https://arxiv.org/pdf/1111.6091.pdf)
 
 - [ ] Tensor train implementation
+
+- [ ] Gradient Based algorithms 
+
+- [ ] [Nesterov Acceleration for ALS](https://arxiv.org/pdf/1810.05846.pdf)
+
+- [ ] Constrained decomposition (nonnegative) 
 
 - [ ] Postprocessing tools (save/load parameters, eigenvalue visualization of perturbations)
 
 - [ ] Implement sliced als version
+
+- [ ] NLP based real tensors for experiments
 
 
 ### Note:
