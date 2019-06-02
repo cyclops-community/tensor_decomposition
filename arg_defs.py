@@ -146,8 +146,9 @@ def add_general_arguments(parser):
             'DT', 
             'DTLR', 
             'PP',
+            'partialPP',
             ],
-        help='choose the optimization method: DT, PP, DTLR (default: DT)')
+        help='choose the optimization method: DT, PP, partialPP, DTLR (default: DT)')
     parser.add_argument(
         '--decomposition',
         default="CP",

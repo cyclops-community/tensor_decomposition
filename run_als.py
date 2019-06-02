@@ -18,7 +18,7 @@ results_dir = join(parent_dir, 'results')
 def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol=1e-5,hosvd=0,args=None):
 
     from CPD.common_kernels import get_residual_sp, get_residual
-    from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
+    from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
 
     T, transformer = None, None
@@ -35,6 +35,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         'DT': CP_DTALS_Optimizer(tenpy,T,A),
         'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
         'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
+        'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
     }
     optimizer = optimizer_list[method]
 
