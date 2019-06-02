@@ -328,19 +328,19 @@ class PPALS_base():
         print("***** pairwise perturbation step *****")
         for i in range(self.order):
             nodename = self._get_nodename(np.array([i]))
-            N = self.tree[nodename][1]
+            N = self.tree[nodename][1][:]
 
             for j in range(i):
                 parentname = self._get_nodename(np.array([j,i]))
                 einstr = self._get_einstr(np.array([i]), np.array([j,i]), j)
-                N += self.tenpy.einsum(einstr,self.tree[parentname][1],self.dA[j])
+                N = N + self.tenpy.einsum(einstr,self.tree[parentname][1],self.dA[j])
             for j in range(i+1, self.order):
                 parentname = self._get_nodename(np.array([i,j]))
                 einstr = self._get_einstr(np.array([i]), np.array([i,j]), j)
-                N += self.tenpy.einsum(einstr,self.tree[parentname][1],self.dA[j])
+                N = N + self.tenpy.einsum(einstr,self.tree[parentname][1],self.dA[j])
 
             output = self._solve_PP(i,Regu,N)
-            self.dA[i] += output - self.A[i]
+            self.dA[i] = self.dA[i] + output - self.A[i]
             self.A[i] = output
 
         num_smallupdate = 0
@@ -588,7 +588,7 @@ class partialPP_ALS_base():
             for j in range(3):
                 self._initialize_treenode(np.array([i]), self.contract_types[j])
                 nodename = self._get_nodename(np.array([i]), self.contract_types[j])
-                N += self.tree[nodename].tensor
+                N = N + self.tree[nodename].tensor
 
             self.A[i] = self._solve_PP(i,Regu,N)
 
@@ -597,10 +597,10 @@ class partialPP_ALS_base():
             for j in range(2):
                 self._initialize_treenode(np.array([i]), self.contract_types[j])
                 nodename = self._get_nodename(np.array([i]), self.contract_types[j])
-                N += self.tree[nodename].tensor
+                N = N + self.tree[nodename].tensor
 
             output = self._solve_PP(i,Regu,N)
-            self.dA[i] = output - self.A0[i]
+            self.dA[i] = self.dA[i] + output - self.A[i]
             self.A[i] = output
 
         num_smallupdate = 0
