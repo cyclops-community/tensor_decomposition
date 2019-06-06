@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import abc, six
-import collections 
+import collections
 try:
     import Queue as queue
 except ImportError:
@@ -63,6 +63,8 @@ class DTLRALS_base():
         self.A = A
         self.R = A[0].shape[1]
         self.r = args.r
+        self.lr_tol = args.lr_tol
+        self.do_lr_tol = args.do_lr_tol
         self.RHS = RHS
         self.iterations = 0
         self.num_lowr_init_iter = args.num_lowr_init_iter
@@ -77,6 +79,10 @@ class DTLRALS_base():
 
     @abc.abstractmethod
     def _solve_by_full_rank(self,i,Regu):
+        return
+
+    @abc.abstractmethod
+    def _solve_LR_by_tol(self,i,Regu,tol):
         return
 
     @abc.abstractmethod
@@ -174,7 +180,10 @@ class DTLRALS_base():
             if self.RHS is None:
                 self.form_RHS()
             for i in range(len(self.A)):
-                [U,VT] = self._solve_DTLR(i,Regu)
+                if self.do_lr_tol>0:
+                    [U,VT] = self._solve_LR_by_tol(i,Regu,self.lr_tol)
+                else:
+                    [U,VT] = self._solve_DTLR(i,Regu)
                 self.A[i] += self.tenpy.einsum("ij,jk->ik",U,VT)
                 self.update_RHS(i,U,VT)
         return self.A
@@ -397,7 +406,7 @@ class PPALS_base():
             A = self._step_dt_subroutine(Regu)
         return A
 
-TREENODE = collections.namedtuple('TREENODE',['indices_A','tensor','contract_types']) 
+TREENODE = collections.namedtuple('TREENODE',['indices_A','tensor','contract_types'])
 
 @six.add_metaclass(abc.ABCMeta)
 class partialPP_ALS_base():
@@ -426,7 +435,7 @@ class partialPP_ALS_base():
         self.order = len(self.A)
         for i in range(self.order):
             self.dA.append(tenpy.zeros((A[i].shape[0],A[i].shape[1])))
-        
+
         self.pp = False
         self.reinitialize_tree = False
         self.tol_restart_dt = args.tol_restart_dt
@@ -522,11 +531,11 @@ class partialPP_ALS_base():
             parent_nodename = self._get_nodename(parent_index, contract_types[1:])
             matrix_contract_type = contract_types[0]
             parent_contract_types = contract_types[1:]
-        else: 
+        else:
             contract_index = comp_index[1] #comp_index[-1]
-            comp_parent_index = np.delete(comp_index, 1, 0) #comp_index[:-1]  
+            comp_parent_index = np.delete(comp_index, 1, 0) #comp_index[:-1]
             parent_index = np.setdiff1d(self.fulllist, comp_parent_index)
-            parent_nodename = self._get_nodename(parent_index, np.delete(contract_types, 1, 0))  
+            parent_nodename = self._get_nodename(parent_index, np.delete(contract_types, 1, 0))
             matrix_contract_type = contract_types[1]
             parent_contract_types = np.delete(contract_types, 1, 0)
 
@@ -656,4 +665,3 @@ class partialPP_ALS_base():
         else:
             A = self._step_dt_subroutine(Regu)
         return A
-

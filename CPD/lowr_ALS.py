@@ -91,5 +91,31 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
         A_new = solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), self.RHS[i])
         dA = A_new - self.A[i]
         [U,S,VT] = self.tenpy.svd(dA,self.r)
-        VT = self.tenpy.einsum("i,ij->ij",S,VT)
-        return [U,VT]
+        return [U,S,VT]
+
+    def _get_index_by_tol(self,s,tol):
+        """Get the end index of the singular values that we want to keep by pre-specified tolerance.
+
+        Args:
+            s (tenpy array): a vector of singular values
+            tol (float): tolerance
+
+        Returns:
+            int: end index of the singular values that we want to keep
+        """
+        n = s.shape[0]
+        i = n-1
+        a = 0
+        while a<tol and i>=0:
+            a += s[i]
+            i -= 1
+        return i+2
+
+    def _solve_LR_by_tol(self,i,Regu,tol):
+        U,s,VT = self._solve_by_full_rank(i,Regu)
+        end = self._get_index_by_tol(s,tol)
+        U = U[:,:end]
+        s = s[:end]
+        VT = VT[:end,:]
+        VT = self.tenpy.einsum("i,ij->ij",s,VT)
+        return U,VT
