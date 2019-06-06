@@ -7,7 +7,7 @@ import csv
 from pathlib import Path
 from os.path import dirname, join
 import tensors.synthetic_tensors as synthetic_tensors
-#import tensors.real_tensors as real_tensors
+import tensors.real_tensors as real_tensors
 import argparse
 import arg_defs as arg_defs
 import csv
@@ -58,9 +58,9 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         t1 = time.time()
         tenpy.printf("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
-        '''if abs(fitness_old-fitness) < tol:
+        if abs(fitness_old-fitness) < tol:
             break
-        '''
+        
         fitness_old = fitness
 
     if args.hosvd != 0:
