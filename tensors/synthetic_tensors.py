@@ -2,7 +2,8 @@ import numpy as np
 import sys
 import time
 
-def init_rand(tenpy,order,s,R,sp_frac=1.):
+def init_rand(tenpy,order,s,R,sp_frac=1.,seed=1):
+    tenpy.seed(seed*1001)
     A = []
     for i in range(order):
         A.append(tenpy.random((s,R)))

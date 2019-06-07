@@ -153,7 +153,7 @@ if __name__ == "__main__":
     if tensor == "random":
         if args.decomposition == "CP":
             tenpy.printf("Testing random tensor")
-            [T,O] = synthetic_tensors.init_rand(tenpy,order,s,R,sp_frac)
+            [T,O] = synthetic_tensors.init_rand(tenpy,order,s,R,sp_frac,args.seed)
         if args.decomposition == "Tucker":
             tenpy.printf("Testing random tensor")
             shape = s * np.ones(order).astype(int)
