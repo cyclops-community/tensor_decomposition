@@ -183,7 +183,8 @@ class DTLRALS_base():
                 if self.do_lr_tol>0:
                     [U,VT] = self._solve_LR_by_tol(i,Regu,self.lr_tol)
                 else:
-                    [U,VT] = self._solve_DTLR(i,Regu)
+                    [U,s,VT] = self._solve_by_full_rank(i,Regu)
+                    VT = self.tenpy.einsum("i,ij->ij",s,VT)
                 self.A[i] += self.tenpy.einsum("ij,jk->ik",U,VT)
                 self.update_RHS(i,U,VT)
         return self.A

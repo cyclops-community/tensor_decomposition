@@ -60,7 +60,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         time_all += t1-t0
         if abs(fitness_old-fitness) < tol:
             break
-        
+
         fitness_old = fitness
 
     if args.hosvd != 0:

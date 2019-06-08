@@ -46,8 +46,8 @@ def svd(A,r=None):
         VT = VT[:r,:]
     return U,s,VT
 
-def svd_rand(A):
-    return la.svd(A)
+def svd_rand(A,r=None):
+    return svd(A,r)
 
 def cholesky(A):
     return la.cholesky(A)

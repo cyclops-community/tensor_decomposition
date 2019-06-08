@@ -90,7 +90,10 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
         """
         A_new = solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), self.RHS[i])
         dA = A_new - self.A[i]
-        [U,S,VT] = self.tenpy.svd(dA,self.r)
+        if self.do_lr_tol == 0:
+            [U,S,VT] = self.tenpy.svd(dA,self.r)
+        else:
+            [U,S,VT] = self.tenpy.svd(dA)
         return [U,S,VT]
 
     def _get_index_by_tol(self,s,tol):
@@ -109,7 +112,9 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
         while a<tol and i>=0:
             a += s[i]
             i -= 1
-        return i+2
+        if i!=n-1:
+            i += 2
+        return i
 
     def _solve_LR_by_tol(self,i,Regu,tol):
         U,s,VT = self._solve_by_full_rank(i,Regu)
