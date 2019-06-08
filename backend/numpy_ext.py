@@ -38,8 +38,14 @@ def vecnorm(T):
 def dot(A,B):
     return np.dot(A,B)
 
+def eigvalh(A):
+    return la.eigvalh(A)
+
+def eigvalsh(A):
+    return la.eigvalsh(A)
+
 def svd(A,r=None):
-    U,s,VT = la.svd(A)
+    U,s,VT = la.svd(A,full_matrices=False)
     if r is not None:
         U = U[:,:r]
         s = s[:r]

@@ -106,6 +106,7 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
         Returns:
             int: end index of the singular values that we want to keep
         """
+        #print(s)
         n = s.shape[0]
         i = n-1
         a = 0
@@ -114,10 +115,22 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
             i -= 1
         if i!=n-1:
             i += 2
+        else:
+            i += 1
         return i
 
     def _solve_LR_by_tol(self,i,Regu,tol):
-        U,s,VT = self._solve_by_full_rank(i,Regu)
+        A_new = solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), self.RHS[i])
+        dA = A_new - self.A[i]
+        '''einstr = ""
+        if dA.shape[0]<dA.shape[1]:
+            einstr = "ij,kj->ik"
+        else:
+            einstr = "ij,ik->jk"
+        dATdA = self.tenpy.einsum(einstr,dA,dA)
+        s = self.tenpy.eigvalsh(dATdA)
+        s = s**0.5'''
+        [U,s,VT] = self.tenpy.svd(dA)
         end = self._get_index_by_tol(s,tol)
         U = U[:,:end]
         s = s[:end]

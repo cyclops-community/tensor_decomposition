@@ -7,7 +7,7 @@ import csv
 from pathlib import Path
 from os.path import dirname, join
 import tensors.synthetic_tensors as synthetic_tensors
-import tensors.real_tensors as real_tensors
+#import tensors.real_tensors as real_tensors
 import argparse
 import arg_defs as arg_defs
 import csv
