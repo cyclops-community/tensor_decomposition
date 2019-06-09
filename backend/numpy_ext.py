@@ -103,3 +103,6 @@ def transpose(A):
 
 def argmax(A, axis=0):
     return abs(A).argmax(axis=axis)
+
+def qr(A):
+    return la.qr(A)

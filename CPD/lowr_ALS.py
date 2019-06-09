@@ -1,7 +1,8 @@
-from .common_kernels import solve_sys, compute_lin_sysN
+from .common_kernels import solve_sys, compute_lin_sysN, randomized_svd
 from als.ALS_optimizer import DTALS_base, DTLRALS_base, PPALS_base
 from .standard_ALS import CP_DTALS_Optimizer
 from .lowr_ALS3 import solve_sys_lowr
+import time
 
 class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
     """Dimension tree with low rank update CP decomposition optimizer
@@ -122,18 +123,31 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
     def _solve_LR_by_tol(self,i,Regu,tol):
         A_new = solve_sys(self.tenpy,compute_lin_sysN(self.tenpy,self.A,i,Regu), self.RHS[i])
         dA = A_new - self.A[i]
-        '''einstr = ""
+        '''
+        ## randomized svd with pre-specified rank
+        einstr = ""
         if dA.shape[0]<dA.shape[1]:
             einstr = "ij,kj->ik"
         else:
             einstr = "ij,ik->jk"
         dATdA = self.tenpy.einsum(einstr,dA,dA)
         s = self.tenpy.eigvalsh(dATdA)
-        s = s**0.5'''
+        s = s**0.5
+        end = self._get_index_by_tol(s,tol)
+        #time2 = time.time()
+        [U,s,VT] = randomized_svd(self.tenpy,dA,end)
+        #time3 = time.time()
+        #print("random svd took ",time3-time2)
+        '''
+        ## standard svd implementation
+        time0 = time.time()
         [U,s,VT] = self.tenpy.svd(dA)
+        time1 = time.time()
+        print("full svd took ",time1-time0)
         end = self._get_index_by_tol(s,tol)
         U = U[:,:end]
         s = s[:end]
         VT = VT[:end,:]
+        
         VT = self.tenpy.einsum("i,ij->ij",s,VT)
         return U,VT
