@@ -66,10 +66,10 @@ def init_poisson(s,R):
     C = tenpy.random((s,R))
     return [A,B,C,T,O]
 
-def init_mom_cons(k):
+def init_mom_cons(tenpy,k):
     order = 4
     mode_weights = [1, 1, -1, -1]
-    
+
     delta = tenpy.tensor(k*np.ones(order))
     [inds,vals] = delta.read_local()
     new_inds = []
@@ -88,10 +88,10 @@ def init_mom_cons(k):
     return delta
 
 
-def init_mom_cons_sv(k):
+def init_mom_cons_sv(tenpy,k):
     order = 4
     mode_weights = [1, 1, -1, -1]
-    
+
     delta = tenpy.tensor(k*np.ones(order))
     [inds,vals] = delta.read_local()
     new_inds = []

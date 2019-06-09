@@ -143,11 +143,11 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
         time0 = time.time()
         [U,s,VT] = self.tenpy.svd(dA)
         time1 = time.time()
-        print("full svd took ",time1-time0)
+        #print("full svd took ",time1-time0)
         end = self._get_index_by_tol(s,tol)
         U = U[:,:end]
         s = s[:end]
         VT = VT[:end,:]
-        
+
         VT = self.tenpy.einsum("i,ij->ij",s,VT)
         return U,VT
