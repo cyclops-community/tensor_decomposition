@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 10 19:29:57 2019
 
-@author: navjo
-"""
 import numpy as np
 import sys
 import time
@@ -80,7 +76,6 @@ def probab_conv(s,lower_rank,upper_rank,num_init =10, num_gen=20, max_iter = 100
      
                 C = tenpy.random(s,R)
     
-                ##Equilibrate
                 for i in range(max_iter):
     
                     [A,B,C]= stnd_ALS.dt_ALS_step(tenpy,T,A,B,C,Regu)
@@ -96,8 +91,6 @@ def probab_conv(s,lower_rank,upper_rank,num_init =10, num_gen=20, max_iter = 100
         
         print('probability of a Tensor converging for rank',R,'is =',converged/(num_gen))
 
-        
-        
     return probab
 
 
