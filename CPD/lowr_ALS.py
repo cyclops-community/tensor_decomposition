@@ -108,10 +108,11 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
             int: end index of the singular values that we want to keep
         """
         #print(s)
+        total = self.tenpy.sum(s)
         n = s.shape[0]
         i = n-1
         a = 0
-        while a<tol and i>=0:
+        while (a/total)<tol and i>=0:
             a += s[i]
             i -= 1
         if i!=n-1:

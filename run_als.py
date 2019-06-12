@@ -41,6 +41,19 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
 
     fitness_old = 0
     for i in range(num_iter):
+        '''if i % 10 ==0 or i==num_iter-1:
+            if sp_res:
+                res = get_residual_sp(tenpy,O,T,A)
+            else:
+                res = get_residual(tenpy,T,A)
+            fitness = 1-res/normT
+
+            if tenpy.is_master_proc():
+                print("[",i,"] Residual is", res, "fitness is: ", fitness)
+                # write to csv file
+                if csv_writer is not None:
+                    csv_writer.writerow([ i, time_all, res ])
+        '''
         if sp_res:
             res = get_residual_sp(tenpy,O,T,A)
         else:
@@ -56,11 +69,11 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         t0 = time.time()
         A = optimizer.step(Regu)
         t1 = time.time()
-        tenpy.printf("Sweep took", t1-t0,"seconds")
+        tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
         time_all += t1-t0
-        if abs(fitness_old-fitness) < tol:
+        """if abs(fitness_old-fitness) < tol:
             break
-
+        """
         fitness_old = fitness
 
     if args.hosvd != 0:

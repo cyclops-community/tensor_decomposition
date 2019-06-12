@@ -186,7 +186,7 @@ def add_general_arguments(parser):
         default=0,
         type=float,
         metavar='float',
-        help='Tolerance for low rank update truncation.')
+        help='Tolerance for low rank update truncation. This is the ratio of the singular values to be dropped. Can only be from 0 to 1.')
     parser.add_argument(
         '--do-lr-tol',
         default=0,
