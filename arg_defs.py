@@ -121,8 +121,8 @@ def add_general_arguments(parser):
         default="random",
         metavar='string',
         choices=[
-            'random', 
-            'mom_cons', 
+            'random',
+            'mom_cons',
             'mom_cons_sv',
             'amino',
             'coil100',
@@ -134,8 +134,8 @@ def add_general_arguments(parser):
         default="ctf",
         metavar='string',
         choices=[
-            'ctf', 
-            'numpy', 
+            'ctf',
+            'numpy',
             ],
         help='choose tensor library teo test, choose between numpy and ctf (default: ctf)')
     parser.add_argument(
@@ -143,8 +143,8 @@ def add_general_arguments(parser):
         default="DT",
         metavar='string',
         choices=[
-            'DT', 
-            'DTLR', 
+            'DT',
+            'DTLR',
             'PP',
             'partialPP',
             ],
@@ -154,8 +154,8 @@ def add_general_arguments(parser):
         default="CP",
         metavar='string',
         choices=[
-            'CP', 
-            'Tucker', 
+            'CP',
+            'Tucker',
             ],
         help='choose the decomposition method: CP, Tucker (default: CP)')
     parser.add_argument(
@@ -182,6 +182,18 @@ def add_general_arguments(parser):
         metavar='float',
         help='Tolerance for stopping the iteration.')
     parser.add_argument(
+        '--lr-tol',
+        default=0,
+        type=float,
+        metavar='float',
+        help='Tolerance for low rank update truncation. This is the ratio of the singular values to be dropped. Can only be from 0 to 1.')
+    parser.add_argument(
+        '--do-lr-tol',
+        default=0,
+        type=int,
+        metavar='int',
+        help='Whether to perform low rank update by tolerance truncation.')
+    parser.add_argument(
         '--tol-restart-dt',
         default=0.01,
         type=float,
@@ -193,7 +205,7 @@ def add_general_arguments(parser):
 
 def get_file_prefix(args):
         return "-".join(filter(None, [
-            args.experiment_prefix, 
+            args.experiment_prefix,
             args.decomposition,
             args.method,
             's' + str(args.s),
@@ -209,5 +221,3 @@ def get_file_prefix(args):
             'numinit-iter' + str(args.num_lowr_init_iter),
             'regu' + str(args.regularization),
         ]))
-
-

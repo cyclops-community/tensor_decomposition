@@ -1,3 +1,4 @@
 wget
 argparse
 pathlib
+pillow

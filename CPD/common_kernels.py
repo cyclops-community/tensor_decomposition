@@ -16,6 +16,31 @@ def compute_lin_sysN(tenpy, A,i,Regu):
 def compute_lin_sys(tenpy, X, Y, Regu):
     return tenpy.dot(tenpy.transpose(X), X) * tenpy.dot(tenpy.transpose(Y), Y) + Regu
 
+def randomized_svd(tenpy,A,r,iter=1):
+    n = A.shape[1]
+    #time0 = time.time()
+    X = tenpy.random((n,r))
+    #time1 = time.time()
+    q,_ = tenpy.qr(X)
+    #time2 = time.time()
+    ATA = tenpy.dot(tenpy.transpose(A),A)
+    #time3 = time.time()
+    for i in range(iter):
+        X = tenpy.einsum("jl,lr->jr",ATA,q)
+        q,_ = tenpy.qr(X)
+        B = tenpy.dot(A,q)
+    #time4 = time.time()
+    U,s,VT = tenpy.svd(B)
+    #time5 = time.time()
+    VT = tenpy.einsum("ik,jk->ij",VT,q)
+    #time6 = time.time()
+    '''print("initialize random tensor took ",time1-time0)
+    print("qr took ",time2-time1)
+    print("compute ATA took ",time3-time2)
+    '''
+    return [U,s,VT]
+
+
 def solve_sys_svd(tenpy, G, RHS):
     t0 = time.time()
     [U,S,VT] = tenpy.svd(G)
@@ -76,4 +101,3 @@ def get_residual_sp(tenpy,O,T,A):
     t1 = time.time()
     tenpy.printf("Sparse residual computation took",t1-t0,"seconds")
     return nrm
-
