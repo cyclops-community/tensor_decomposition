@@ -47,7 +47,7 @@ if __name__ == "__main__":
             
     probab_conv(s,lower_rank,upper_rank,num_init , num_gen, max_iter , res_criteria,Regu)
             
-def probab_conv(s,lower_rank,upper_rank,num_init =10, num_gen=20, max_iter = 10000, res_criteria=10**-6,Regu):
+def probab_conv(s,lower_rank,upper_rank,num_init =5, num_gen=20, max_iter = 10000, res_criteria=10**-6,Regu):
     probab = []
 
     for R in range(lower_rank,upper_rank+1):
