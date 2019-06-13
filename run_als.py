@@ -85,7 +85,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         """
         fitness_old = fitness
 
-    if args.hosvd != 0:
+    if hosvd != 0:
         A_fullsize = []
         norm_input = tenpy.vecnorm(input_tensor)
         for i in range(T.ndim):
