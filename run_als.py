@@ -22,22 +22,31 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
 
     T, transformer = None, None
-    if args.hosvd != 0:
-        from Tucker.common_kernels import hosvd
-        transformer, T = hosvd(tenpy, input_tensor, args.hosvd_core_dim, compute_core=True)
+    if args is not None:
+        if args.hosvd != 0:
+            from Tucker.common_kernels import hosvd
+            transformer, T = hosvd(tenpy, input_tensor, args.hosvd_core_dim, compute_core=True)
+        else:
+            T = input_tensor
     else:
         T = input_tensor
+
+    if Regu is None:
+        Regu = tenpy.eye(A[0].shape[1],A[0].shape[1])
 
     normT = tenpy.vecnorm(T)
 
     time_all = 0.
-    optimizer_list = {
-        'DT': CP_DTALS_Optimizer(tenpy,T,A),
-        'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
-        'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
-        'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
-    }
-    optimizer = optimizer_list[method]
+    if args is None:
+        optimizer = CP_DTALS_Optimizer(tenpy,T,A)
+    else:
+        optimizer_list = {
+            'DT': CP_DTALS_Optimizer(tenpy,T,A),
+            'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
+            'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
+            'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
+        }
+        optimizer = optimizer_list[method]
 
     fitness_old = 0
     for i in range(num_iter):
