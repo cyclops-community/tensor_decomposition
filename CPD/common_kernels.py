@@ -10,7 +10,7 @@ def compute_lin_sysN(tenpy, A,i,Regu):
                 S =  tenpy.dot(tenpy.transpose(A[j]), A[j])
             else:
                 S *= tenpy.dot(tenpy.transpose(A[j]), A[j])
-    S += Regu*tenpy.eye(S.shape[0])
+    S += Regu
     return S
 
 def compute_lin_sys(tenpy, X, Y, Regu):
