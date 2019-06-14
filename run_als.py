@@ -32,7 +32,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         T = input_tensor
 
     if Regu is None:
-        Regu = tenpy.eye(A[0].shape[1],A[0].shape[1])
+        Regu = 0
 
     normT = tenpy.vecnorm(T)
 
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         O = None
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
-    Regu = args.regularization * tenpy.eye(R,R)
+    Regu = args.regularization
 
     A = []
     if args.hosvd != 0:
