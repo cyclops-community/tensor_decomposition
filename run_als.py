@@ -15,7 +15,7 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol=1e-5,hosvd=0,args=None):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol=1e-5,hosvd=0,args=None,lr_csv_writer=None):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
@@ -42,7 +42,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
     else:
         optimizer_list = {
             'DT': CP_DTALS_Optimizer(tenpy,T,A),
-            'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
+            'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args,lr_csv_writer),
             'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
             'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
         }
@@ -144,6 +144,10 @@ if __name__ == "__main__":
     csv_file = open(csv_path, 'a')#, newline='')
     csv_writer = csv.writer(
         csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    lr_csv_path = join(results_dir, arg_defs.get_file_prefix(args)+'singular_values.csv')
+    lr_csv_file = open(lr_csv_path, 'a')
+    lr_csv_writer = csv.writer(
+        lr_csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     s = args.s
     order = args.order
     R = args.R
@@ -218,6 +222,6 @@ if __name__ == "__main__":
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol,args.hosvd,args)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol,args.hosvd,args,lr_csv_writer)
     elif args.decomposition == "Tucker":
         Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args)

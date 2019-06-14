@@ -8,8 +8,8 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
     """Dimension tree with low rank update CP decomposition optimizer
     """
 
-    def __init__(self,tenpy,T,A,args):
-        DTLRALS_base.__init__(self,tenpy,T,A,args)
+    def __init__(self,tenpy,T,A,args,lr_csv_writer):
+        DTLRALS_base.__init__(self,tenpy,T,A,args,lr_csv_writer)
         CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
 
     def _step_dt_subroutine(self,Regu):
@@ -107,7 +107,7 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
         Returns:
             int: end index of the singular values that we want to keep
         """
-        #print(s)
+        print(s)
         total = self.tenpy.sum(s)
         n = s.shape[0]
         i = n-1
@@ -141,9 +141,10 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
         #print("random svd took ",time3-time2)
         '''
         ## standard svd implementation
-        time0 = time.time()
+        #time0 = time.time()
         [U,s,VT] = self.tenpy.svd(dA)
-        time1 = time.time()
+        self.lr_csv_writer.writerow(s)
+        #time1 = time.time()
         #print("full svd took ",time1-time0)
         end = self._get_index_by_tol(s,tol)
         U = U[:,:end]

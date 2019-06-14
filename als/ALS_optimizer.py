@@ -57,7 +57,7 @@ class DTALS_base():
 
 @six.add_metaclass(abc.ABCMeta)
 class DTLRALS_base():
-    def __init__(self,tenpy,T,A,args,RHS=None):
+    def __init__(self,tenpy,T,A,args,lr_csv_writer=None):
         assert(args.do_lr_tol>=0 and args.do_lr_tol<=1)
         self.tenpy = tenpy
         self.T = T
@@ -66,9 +66,10 @@ class DTLRALS_base():
         self.r = args.r
         self.lr_tol = args.lr_tol
         self.do_lr_tol = args.do_lr_tol
-        self.RHS = RHS
+        self.RHS = None
         self.iterations = 0
         self.num_lowr_init_iter = args.num_lowr_init_iter
+        self.lr_csv_writer = lr_csv_writer
 
     @abc.abstractmethod
     def _einstr_builder(self,M,s,ii):
