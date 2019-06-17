@@ -133,7 +133,7 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
             einstr = "ij,ik->jk"
         dATdA = self.tenpy.einsum(einstr,dA,dA)
         s = self.tenpy.eigvalsh(dATdA)
-        s = s**0.5
+        s = s**0.5[::-1]
         end = self._get_index_by_tol(s,tol)
         #time2 = time.time()
         [U,s,VT] = randomized_svd(self.tenpy,dA,end)
@@ -143,7 +143,7 @@ class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
         ## standard svd implementation
         #time0 = time.time()
         [U,s,VT] = self.tenpy.svd(dA)
-        self.lr_csv_writer.writerow(s)
+        #self.lr_csv_writer.writerow(s)
         #time1 = time.time()
         #print("full svd took ",time1-time0)
         end = self._get_index_by_tol(s,tol)
