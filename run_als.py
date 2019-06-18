@@ -206,7 +206,7 @@ if __name__ == "__main__":
         O = None
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
-    Regu = args.regularization * tenpy.eye(S.shape[0])
+    Regu = args.regularization * tenpy.eye(R,R)
 
     A = []
     if args.hosvd != 0:
