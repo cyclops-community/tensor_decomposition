@@ -40,6 +40,61 @@ def randomized_svd(tenpy,A,r,iter=1):
     '''
     return [U,s,VT]
 
+def flatten_matrix_list(A):
+    a = np.zeros(order*R*s)
+    for i in range(order):
+        offset1 = i*s*R
+        for j in range(R):
+            offset2 = j*s
+            start = offset1+offset2
+            end = start+s
+            a[start:end] = A[i][:,j]
+    return a
+
+def conjugate_gradient(A,x,b,tol=1e-5):
+    r = b - A.dot(x)
+    if la.norm(r)<tol:
+        return x
+    p = r
+    counter = 0
+    while True:
+        alpha = np.inner(r,r)/np.inner(p,A.dot(p))
+        x += alpha*p
+        r_new = r - alpha*A.dot(p)
+        if la.norm(r_new)<tol:
+            break
+        beta = np.inner(r_new,r_new)/np.inner(r,r)
+        p = r_new + beta*p
+        r = r_new
+        counter += 1
+    print("conjugate gradient took ",counter," iteration(s).")
+    return x,counter
+
+def preconditioned_conjugate_gradient(A,x,b,M,tol=1e-5,formula="PR"):
+    r = b - A.dot(x)
+    if la.norm(r)<tol:
+        return x
+    z = M.dot(r)
+    p = z
+    counter = 0
+    while True:
+        alpha = np.inner(r,z)/np.inner(p,A.dot(p))
+        x += alpha*p
+        r_new = r - alpha*A.dot(p)
+        if la.norm(r_new)<tol: ## need to add max iteration
+            break
+        z_new = M.dot(r_new)
+        if formula == "PR":
+            beta = np.inner(z_new,r_new-r)/np.inner(z,r)
+        else:
+            beta = np.inner(z_new,r_new)/np.inner(z,r)
+        p = z_new + beta*p
+        r = r_new
+        z = z_new
+        counter += 1
+    print("conjugate gradient took ",counter," iteration(s).")
+    return x,counter
+
 
 def solve_sys_svd(tenpy, G, RHS):
     t0 = time.time()
