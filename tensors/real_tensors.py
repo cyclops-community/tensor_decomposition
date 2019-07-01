@@ -133,7 +133,7 @@ def time_lapse_images(tenpy):
         print("Loading 9th dataset ......")
         x.append(loadmat(data_dir+'/nogueiro_1941/nogueiro_1941.mat')['hsi'])
         x = np.asarray(x).astype(float)
-        print (x.shape)
+        print(x.shape)
 
         output_file = open(join(data_dir, 'time-lapse.bin'), 'wb')
         print("Print out data ......")
@@ -148,3 +148,26 @@ def time_lapse_images(tenpy):
         return tenpy.from_nparray(pixels)
     return pixels
 
+def get_scf_tensor(tenpy):
+
+    from pyscf import gto, scf
+
+    mol = gto.Mole(basis='def2-tzvp')
+    n = 20
+    mol.atom = [['H',(0, 0, 0)]]
+    mol.atom.extend([['H', (i, i, i)] for i in range(1,n)])
+    print(mol.atom)
+    mf = scf.RHF(mol).density_fit().run()
+    T_sym = mf.with_df._cderi
+    print(T_sym.shape)
+    NN1 = T_sym.shape[1]
+    N = int(np.floor(np.sqrt(NN1*2)))
+    print(N,N*(N+1)//2,NN1)
+    T = np.zeros((T_sym.shape[0],N,N))
+    print(T.shape)
+    for i in range(T.shape[0]):
+        T[i][np.triu_indices(N)] = T_sym[i][:]
+        T[i] += T[i].T
+        T[i] -= np.diag(np.diagonal(T[i])/2.)
+ 
+    return T

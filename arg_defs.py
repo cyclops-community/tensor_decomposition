@@ -127,8 +127,9 @@ def add_general_arguments(parser):
             'amino',
             'coil100',
             'timelapse',
+            'scf',
             ],
-        help='choose tensor to test, available: random, mom_cons, mom_cons_sv, amino, coil100, timelapse (default: random)')
+        help='choose tensor to test, available: random, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
     parser.add_argument(
         '--tlib',
         default="ctf",
@@ -208,6 +209,7 @@ def get_file_prefix(args):
             args.experiment_prefix,
             args.decomposition,
             args.method,
+            args.tensor,
             's' + str(args.s),
             'R' + str(args.R),
             'r' + str(args.r),

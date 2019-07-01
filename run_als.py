@@ -7,7 +7,7 @@ import csv
 from pathlib import Path
 from os.path import dirname, join
 import tensors.synthetic_tensors as synthetic_tensors
-#import tensors.real_tensors as real_tensors
+import tensors.real_tensors as real_tensors
 import argparse
 import arg_defs as arg_defs
 import csv
@@ -15,7 +15,7 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',tol=1e-5,hosvd=0,args=None,lr_csv_writer=None):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,lr_csv_writer=None):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
@@ -80,9 +80,6 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
         time_all += t1-t0
-        """if abs(fitness_old-fitness) < tol:
-            break
-        """
         fitness_old = fitness
 
     if hosvd != 0:
@@ -204,6 +201,9 @@ if __name__ == "__main__":
     elif tensor == "timelapse":
         T = real_tensors.time_lapse_images(tenpy)
         O = None
+    elif tensor == "scf":
+        T = real_tensors.get_scf_tensor(tenpy)
+        O = None
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
     Regu = args.regularization * tenpy.eye(R,R)
@@ -222,6 +222,6 @@ if __name__ == "__main__":
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.tol,args.hosvd,args,lr_csv_writer)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args,lr_csv_writer)
     elif args.decomposition == "Tucker":
         Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args)
