@@ -2,13 +2,26 @@ from .common_kernels import solve_sys, compute_lin_sysN, randomized_svd
 from als.ALS_optimizer import DTALS_base, DTLRALS_base, PPALS_base
 from .standard_ALS import CP_DTALS_Optimizer
 from .lowr_ALS3 import solve_sys_lowr
-import time
+import arg_defs as arg_defs
+import time, os
+import csv
+from os.path import dirname, join
+
+parent_dir = join(dirname(__file__), os.pardir)
+results_dir = join(parent_dir, 'results')
+
 
 class CP_DTLRALS_Optimizer(DTLRALS_base, CP_DTALS_Optimizer):
     """Dimension tree with low rank update CP decomposition optimizer
     """
 
-    def __init__(self,tenpy,T,A,args,lr_csv_writer):
+    def __init__(self,tenpy,T,A,args):
+        # set up singular value output
+        lr_csv_path = join(results_dir, arg_defs.get_file_prefix(args)+'singular_values.csv')
+        lr_csv_file = open(lr_csv_path, 'a')
+        lr_csv_writer = csv.writer(
+            lr_csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
         DTLRALS_base.__init__(self,tenpy,T,A,args,lr_csv_writer)
         CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
 

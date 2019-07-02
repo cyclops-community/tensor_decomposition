@@ -39,83 +39,11 @@ def add_general_arguments(parser):
         metavar='int',
         help='Number of iterations (default: 10)')
     parser.add_argument(
-        '--num-lowr-init-iter',
-        type=int,
-        default=2,
-        metavar='int',
-        help='Number of initializing iterations (default: 2)')
-    parser.add_argument(
-        '--sp-fraction',
-        type=float,
-        default=1.,
-        metavar='float',
-        help='sparsity (default: 1)')
-    parser.add_argument(
         '--regularization',
         type=float,
         default=0.0000001,
         metavar='float',
         help='regularization (default: 0.0000001)')
-    parser.add_argument(
-        '--sp-updatelowrank',
-        type=int,
-        default=0,
-        metavar='int',
-        help='mem-preserving ordering of low-rank sparse contractions (default: 0)')
-    parser.add_argument(
-        '--sp-res',
-        type=int,
-        default=0,
-        metavar='int',
-        help='TTTP-based sparse residual calculation (default: 0)')
-    parser.add_argument(
-        '--run-naive',
-        type=int,
-        default=1,
-        metavar='int',
-        help='Run naive Dimension tree algorithm (default: 1)')
-    parser.add_argument(
-        '--run-lowrank',
-        type=int,
-        default=0,
-        metavar='int',
-        help='Run Dimension tree algorithm with low rank update (default: 0)')
-    parser.add_argument(
-        '--run-lowrank-dt',
-        type=int,
-        default=0,
-        metavar='int',
-        help='Run Dimension tree algorithm with low rank update on two of the factor matrices (default: 0)')
-    parser.add_argument(
-        '--num-inter-iter',
-        type=int,
-        default=10,
-        metavar='int',
-        help='Number of intermediate iterations when running low rand dimension tree with two fixed children of the root (default: 10)')
-    parser.add_argument(
-        '--mm-test',
-        type=int,
-        default=0,
-        metavar='int',
-        help='decompose matrix multiplication tensor as opposed to random (default: 0)')
-    parser.add_argument(
-        '--pois-test',
-        type=int,
-        default=0,
-        metavar='int',
-        help='decompose Poisson tensor as opposed to random (default: 0)')
-    parser.add_argument(
-        '--num-slices',
-        type=int,
-        default=1,
-        metavar='int',
-        help='if greater than one do sliced standard ALS with this many slices (default: 1)')
-    parser.add_argument(
-        '--sp-update-factor',
-        type=int,
-        default=0,
-        metavar='int',
-        help='use a sparse right factor in the low rank update scheme (default: 0)')
     parser.add_argument(
         '--tensor',
         default="random",
@@ -183,17 +111,13 @@ def add_general_arguments(parser):
         metavar='float',
         help='Tolerance for stopping the iteration.')
     parser.add_argument(
-        '--lr-tol',
-        default=0,
-        type=float,
-        metavar='float',
-        help='Tolerance for low rank update truncation. This is the ratio of the singular values to be dropped. Can only be from 0 to 1.')
-    parser.add_argument(
-        '--do-lr-tol',
-        default=0,
+        '--res-calc-freq',
+        default=1,
         type=int,
         metavar='int',
-        help='Whether to perform low rank update by tolerance truncation.')
+        help='residual calculation frequency (default: 1).')
+
+def add_pp_arguments(parser):
     parser.add_argument(
         '--tol-restart-dt',
         default=0.01,
@@ -201,7 +125,96 @@ def add_general_arguments(parser):
         metavar='float',
         help='used in pairwise perturbation optimizer, tolerance for dimention tree restart')
 
+def add_lrdt_arguments(parser):
+    parser.add_argument(
+        '--run-lowrank-dt',
+        type=int,
+        default=0,
+        metavar='int',
+        help='Run Dimension tree algorithm with low rank update on two of the factor matrices (default: 0)')
+    parser.add_argument(
+        '--do-lr-tol',
+        default=0,
+        type=int,
+        metavar='int',
+        help='Whether to perform low rank update by tolerance truncation.')
+    parser.add_argument(
+        '--lr-tol',
+        default=0,
+        type=float,
+        metavar='float',
+        help='Tolerance for low rank update truncation. This is the ratio of the singular values to be dropped. Can only be from 0 to 1.')
+    parser.add_argument(
+        '--sp-update-factor',
+        type=int,
+        default=0,
+        metavar='int',
+        help='use a sparse right factor in the low rank update scheme (default: 0)')
+    parser.add_argument(
+        '--num-lowr-init-iter',
+        type=int,
+        default=2,
+        metavar='int',
+        help='Number of initializing iterations (default: 2)')
+    parser.add_argument(
+        '--num-inter-iter',
+        type=int,
+        default=10,
+        metavar='int',
+        help='Number of intermediate iterations when running low rand dimension tree with two fixed children of the root (default: 10)')
 
+def add_general_arguments_3d(parser):
+    parser.add_argument(
+        '--run-naive',
+        type=int,
+        default=1,
+        metavar='int',
+        help='Run naive Dimension tree algorithm (default: 1)')
+    parser.add_argument(
+        '--run-lowrank',
+        type=int,
+        default=0,
+        metavar='int',
+        help='Run Dimension tree algorithm with low rank update (default: 0)')
+    parser.add_argument(
+        '--mm-test',
+        type=int,
+        default=0,
+        metavar='int',
+        help='decompose matrix multiplication tensor as opposed to random (default: 0)')
+    parser.add_argument(
+        '--pois-test',
+        type=int,
+        default=0,
+        metavar='int',
+        help='decompose Poisson tensor as opposed to random (default: 0)')
+    parser.add_argument(
+        '--num-slices',
+        type=int,
+        default=1,
+        metavar='int',
+        help='if greater than one do sliced standard ALS with this many slices (default: 1)')
+
+
+def add_sparse_arguments(parser):
+    parser.add_argument(
+        '--sp-fraction',
+        type=float,
+        default=1.,
+        metavar='float',
+        help='sparsity (default: 1)')
+    parser.add_argument(
+        '--sp-updatelowrank',
+        type=int,
+        default=0,
+        metavar='int',
+        help='mem-preserving ordering of low-rank sparse contractions (default: 0)')
+    parser.add_argument(
+        '--sp-res',
+        type=int,
+        default=0,
+        metavar='int',
+        help='TTTP-based sparse residual calculation (default: 0)')
 
 
 def get_file_prefix(args):
@@ -213,13 +226,13 @@ def get_file_prefix(args):
             's' + str(args.s),
             'R' + str(args.R),
             'r' + str(args.r),
-            'spfrac' + str(args.sp_fraction),
-            'splowrank' + str(args.sp_updatelowrank),
-            'runlowrank' + str(args.run_lowrank),
-            'runlowrankdt' + str(args.run_lowrank_dt),
-            'numinteriter' + str(args.num_inter_iter),
-            'pois' + str(args.pois_test),
-            'numslices' + str(args.num_slices),
-            'numinit-iter' + str(args.num_lowr_init_iter),
+            #'spfrac' + str(args.sp_fraction),
+            #'splowrank' + str(args.sp_updatelowrank),
+            #'runlowrank' + str(args.run_lowrank),
+            #'runlowrankdt' + str(args.run_lowrank_dt),
+            #'numinteriter' + str(args.num_inter_iter),
+            #'pois' + str(args.pois_test),
+            #'numslices' + str(args.num_slices),
+            #'numinit-iter' + str(args.num_lowr_init_iter),
             'regu' + str(args.regularization),
         ]))

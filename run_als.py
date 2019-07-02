@@ -15,7 +15,7 @@ import csv
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,lr_csv_writer=None):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
@@ -42,7 +42,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
     else:
         optimizer_list = {
             'DT': CP_DTALS_Optimizer(tenpy,T,A),
-            'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args,lr_csv_writer),
+            'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
             'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
             'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
         }
@@ -50,7 +50,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
 
     fitness_old = 0
     for i in range(num_iter):
-        '''if i % 10 ==0 or i==num_iter-1:
+        if i % res_calc_freq ==0 or i==num_iter-1:
             if sp_res:
                 res = get_residual_sp(tenpy,O,T,A)
             else:
@@ -62,18 +62,6 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
                 # write to csv file
                 if csv_writer is not None:
                     csv_writer.writerow([ i, time_all, res ])
-        '''
-        if sp_res:
-            res = get_residual_sp(tenpy,O,T,A)
-        else:
-            res = get_residual(tenpy,T,A)
-        fitness = 1-res/normT
-
-        if tenpy.is_master_proc():
-            print("[",i,"] Residual is", res, "fitness is: ", fitness)
-            # write to csv file
-            if csv_writer is not None:
-                csv_writer.writerow([ i, time_all, res ])
 
         t0 = time.time()
         A = optimizer.step(Regu)
@@ -97,7 +85,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
     tenpy.printf(method+" method took",time_all,"seconds overall")
     return res
 
-def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',args=None):
+def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',args=None,res_calc_freq=1):
 
     from Tucker.common_kernels import get_residual_sp, get_residual
     from Tucker.standard_ALS import Tucker_DTALS_Optimizer, Tucker_PPALS_Optimizer
@@ -110,16 +98,17 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT'
     optimizer = optimizer_list[method]
 
     for i in range(num_iter):
-        if sp_res:
-            # TODO: implement the get residual sparse version
-            res = get_residual_sp(tenpy,O,T,A)
-        else:
-            res = get_residual(tenpy,T,A)
-        if tenpy.is_master_proc():
-            print("[",i,"] Residual is", res)
-            # write to csv file
-            if csv_writer is not None:
-                csv_writer.writerow([ i, time_all, res ])
+        if i % res_calc_freq ==0 or i==num_iter-1:
+            if sp_res:
+                # TODO: implement the get residual sparse version
+                res = get_residual_sp(tenpy,O,T,A)
+            else:
+                res = get_residual(tenpy,T,A)
+            if tenpy.is_master_proc():
+                print("[",i,"] Residual is", res)
+                # write to csv file
+                if csv_writer is not None:
+                    csv_writer.writerow([ i, time_all, res ])
         t0 = time.time()
         A = optimizer.step(Regu)
         t1 = time.time()
@@ -133,6 +122,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     arg_defs.add_general_arguments(parser)
+    arg_defs.add_pp_arguments(parser)
+    arg_defs.add_lrdt_arguments(parser)
+    arg_defs.add_sparse_arguments(parser)
     args, _ = parser.parse_known_args()
 
     # Set up CSV logging
@@ -141,10 +133,7 @@ if __name__ == "__main__":
     csv_file = open(csv_path, 'a')#, newline='')
     csv_writer = csv.writer(
         csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    lr_csv_path = join(results_dir, arg_defs.get_file_prefix(args)+'singular_values.csv')
-    lr_csv_file = open(lr_csv_path, 'a')
-    lr_csv_writer = csv.writer(
-        lr_csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
     s = args.s
     order = args.order
     R = args.R
@@ -222,6 +211,6 @@ if __name__ == "__main__":
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args,lr_csv_writer)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq)
     elif args.decomposition == "Tucker":
-        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args)
+        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq)

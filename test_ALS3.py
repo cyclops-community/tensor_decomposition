@@ -234,6 +234,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     arg_defs.add_general_arguments(parser)
+    arg_defs.add_general_arguments_3d(parser)
+    arg_defs.add_pp_arguments(parser)
+    arg_defs.add_lrdt_arguments(parser)
+    arg_defs.add_sparse_arguments(parser)    
     args, _ = parser.parse_known_args()
 
     # Set up CSV logging
