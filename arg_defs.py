@@ -116,6 +116,18 @@ def add_general_arguments(parser):
         type=int,
         metavar='int',
         help='residual calculation frequency (default: 1).')
+    parser.add_argument(
+        '--save-tensor',
+        action='store_true',
+        help="Whether to save the tensor to file.")
+    parser.add_argument(
+        '--load-tensor',
+        type=str,
+        default='',
+        metavar='str',
+        help=
+        'Where to load the tensor if the file exists. Empty means it starts from scratch. E.g. --load-tensor results/YOUR-FOLDER/ (do not forget the /)'
+        )
 
 def add_pp_arguments(parser):
     parser.add_argument(

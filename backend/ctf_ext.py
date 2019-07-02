@@ -1,7 +1,19 @@
 import ctf
+import numpy as np
 
 def name():
     return 'ctf'
+
+def save_tensor_to_file(T, filename):
+    np.save(filename, T.to_nparray())
+
+def load_tensor_from_file(filename):
+    try:
+        T = np.load(filename)
+        print('Loaded tensor from file ', filename)
+    except FileNotFoundError:
+        raise FileNotFoundError('No tensor exist on: ', filename)
+    return ctf.from_nparray(T)
 
 def from_nparray(arr):
     return ctf.from_nparray(arr)

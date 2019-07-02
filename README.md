@@ -6,8 +6,6 @@
 
 - [ ] Test cases development
 
-- [x] Modularize argument parsers related to specific methods
-
 - [ ] Randomized CP/Tucker implementation
 
 - [ ] [Multigrid methods implementation](https://arxiv.org/pdf/1111.6091.pdf)

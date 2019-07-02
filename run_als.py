@@ -12,6 +12,8 @@ import argparse
 import arg_defs as arg_defs
 import csv
 
+from utils import save_decomposition_results
+
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
@@ -83,6 +85,11 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         tenpy.printf(method, "with hosvd, residual is", res, "fitness is: ", fitness)
 
     tenpy.printf(method+" method took",time_all,"seconds overall")
+
+    if args.save_tensor:
+        folderpath = join(results_dir, arg_defs.get_file_prefix(args))
+        save_decomposition_results(T,A,tenpy,folderpath)
+
     return res
 
 def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',args=None,res_calc_freq=1):
@@ -115,6 +122,10 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT'
         tenpy.printf("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
     tenpy.printf("Naive method took",time_all,"seconds overall")
+
+    if args.save_tensor:
+        folderpath = join(results_dir, arg_defs.get_file_prefix(args))
+        save_decomposition_results(T,A,tenpy,folderpath)
 
     return res
 
@@ -162,7 +173,10 @@ if __name__ == "__main__":
 
     tenpy.seed(args.seed)
 
-    if tensor == "random":
+    if args.load_tensor is not '':
+        T = tenpy.load_tensor_from_file(args.load_tensor+'tensor.npy')
+        O = None
+    elif tensor == "random":
         if args.decomposition == "CP":
             tenpy.printf("Testing random tensor")
             [T,O] = synthetic_tensors.init_rand(tenpy,order,s,R,sp_frac,args.seed)
@@ -198,7 +212,10 @@ if __name__ == "__main__":
     Regu = args.regularization * tenpy.eye(R,R)
 
     A = []
-    if args.hosvd != 0:
+    if args.load_tensor is not '':
+        for i in range(T.ndim):
+            A.append(tenpy.load_tensor_from_file(args.load_tensor+'mat'+str(i)+'.npy'))
+    elif args.hosvd != 0:
         if args.decomposition == "CP":
             for i in range(T.ndim):
                 A.append(tenpy.random((args.hosvd_core_dim[i],R)))

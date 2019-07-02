@@ -5,6 +5,17 @@ import scipy.linalg as sla
 def name():
     return 'numpy'
 
+def save_tensor_to_file(T, filename):
+    np.save(filename, T)
+
+def load_tensor_from_file(filename):
+    try:
+        T = np.load(filename)
+        print('Loaded tensor from file ', filename)
+    except FileNotFoundError:
+        raise FileNotFoundError('No tensor exist on: ', filename)
+    return T
+
 def TTTP(T, A):
     T_inds = "".join([chr(ord('a')+i) for i in range(T.ndim)])
     einstr = ""
