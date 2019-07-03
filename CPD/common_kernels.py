@@ -10,11 +10,11 @@ def compute_lin_sysN(tenpy, A,i,Regu):
                 S =  tenpy.dot(tenpy.transpose(A[j]), A[j])
             else:
                 S *= tenpy.dot(tenpy.transpose(A[j]), A[j])
-    S += Regu
+    S += Regu * tenpy.eye(S.shape[0])
     return S
 
 def compute_lin_sys(tenpy, X, Y, Regu):
-    return tenpy.dot(tenpy.transpose(X), X) * tenpy.dot(tenpy.transpose(Y), Y) + Regu
+    return tenpy.dot(tenpy.transpose(X), X) * tenpy.dot(tenpy.transpose(Y), Y) + Regu*tenpy.eye(Y.shape[1])
 
 def randomized_svd(tenpy,A,r,iter=1):
     n = A.shape[1]
@@ -40,18 +40,37 @@ def randomized_svd(tenpy,A,r,iter=1):
     '''
     return [U,s,VT]
 
-def flatten_matrix_list(A):
-    a = np.zeros(order*R*s)
-    for i in range(order):
-        offset1 = i*s*R
-        for j in range(R):
-            offset2 = j*s
-            start = offset1+offset2
-            end = start+s
-            a[start:end] = A[i][:,j]
+
+def compute_number_of_variables(G):
+    a = 0
+    for matrix in G:
+        a += matrix.shape[0]*matrix.shape[1]
     return a
 
-def conjugate_gradient(A,x,b,tol=1e-5):
+
+def flatten_Tensor(tenpy,G):
+    l = compute_number_of_variables(G)
+    g = tenpy.zeros(l)
+    start = 0
+    for i in range(len(G)):
+        end = start + G[i].shape[0]*G[i].shape[1]
+        g[start:end] = tenpy.reshape(G[i],-1,'F')
+        start = end
+    return g
+
+
+def reshape_into_matrices(tenpy,x,template):
+    ret = []
+    start = 0
+    for i in range(len(template)):
+        end = start + template[i].shape[0]*template[i].shape[1]
+        A = tenpy.reshape(x[start:end],template[i].shape,'F')
+        ret.append(A)
+        start = end
+    return ret
+
+def conjugate_gradient(A,x,b,tol=1e-4):
+    tol = np.max([tol,tol*la.norm(b)])
     r = b - A.dot(x)
     if la.norm(r)<tol:
         return x
@@ -67,10 +86,10 @@ def conjugate_gradient(A,x,b,tol=1e-5):
         p = r_new + beta*p
         r = r_new
         counter += 1
-    print("conjugate gradient took ",counter," iteration(s).")
     return x,counter
 
-def preconditioned_conjugate_gradient(A,x,b,M,tol=1e-5,formula="PR"):
+def preconditioned_conjugate_gradient(A,x,b,M,tol=1e-4,formula="PR"):
+    tol = np.max([tol,tol*la.norm(b)])
     r = b - A.dot(x)
     if la.norm(r)<tol:
         return x
@@ -92,7 +111,6 @@ def preconditioned_conjugate_gradient(A,x,b,M,tol=1e-5,formula="PR"):
         r = r_new
         z = z_new
         counter += 1
-    print("conjugate gradient took ",counter," iteration(s).")
     return x,counter
 
 

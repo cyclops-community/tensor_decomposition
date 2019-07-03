@@ -22,6 +22,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
+    from CPD.NLS import CP_fastNLS_Optimizer
 
     T, transformer = None, None
     if args is not None:
@@ -34,7 +35,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         T = input_tensor
 
     if Regu is None:
-        Regu = tenpy.zeros((A[0].shape[1],A[0].shape[1]))
+        Regu = 0
 
     normT = tenpy.vecnorm(T)
 
@@ -47,6 +48,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
             'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
             'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
             'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
+            'NLS': CP_fastNLS_Optimizer(tenpy,T,A)
         }
         optimizer = optimizer_list[method]
 
@@ -66,6 +68,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
                     csv_writer.writerow([ i, time_all, res ])
 
         t0 = time.time()
+        Regu = 1/(i+1)
         A = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
@@ -209,7 +212,7 @@ if __name__ == "__main__":
         O = None
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
-    Regu = args.regularization * tenpy.eye(R,R)
+    Regu = args.regularization
 
     A = []
     if args.load_tensor is not '':
