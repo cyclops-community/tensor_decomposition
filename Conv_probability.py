@@ -20,7 +20,6 @@ if __name__ == "__main__":
 
     s = args.s
     R = args.R
-    upper_rank = args.upper_rank
     max_iter = args.max_iter
     upper_rank = args.upper_rank
     lower_rank = args.lower_rank
@@ -45,9 +44,9 @@ if __name__ == "__main__":
             print( arg+':', getattr(args, arg))
             
             
-    probab_conv(s,lower_rank,upper_rank,num_init , num_gen, max_iter , res_criteria,Regu)
+    probab_conv(s,lower_rank,upper_rank,Regu,num_init , num_gen, max_iter , res_criteria)
             
-def probab_conv(s,lower_rank,upper_rank,num_init =5, num_gen=20, max_iter = 10000, res_criteria=10**-6,Regu):
+def probab_conv(s,lower_rank,upper_rank,Regu,num_init =5, num_gen=20, max_iter = 10000, res_criteria=10**-6):
     probab = []
 
     for R in range(lower_rank,upper_rank+1):
