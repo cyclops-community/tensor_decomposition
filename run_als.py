@@ -68,7 +68,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
                     csv_writer.writerow([ i, time_all, res ])
 
         t0 = time.time()
-        Regu = 1/(i+1)
+        # Regu = 1/(i+1)
         A = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
