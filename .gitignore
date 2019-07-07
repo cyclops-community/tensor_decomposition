@@ -1,3 +1,6 @@
+.npy
+cookie
+
 data/
 results/*.csv
 .DS_Store
