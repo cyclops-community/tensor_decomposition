@@ -178,6 +178,6 @@ class CP_fastNLS_Optimizer():
         mult_LinOp = self.create_fast_hessian_contract_LinOp(Regu)
         P = self.compute_block_diag_preconditioner(Regu)
         precondition_LinOp = self.create_block_precondition_LinOp(P)
-        [delta,_] = spsalg.cg(mult_LinOp,-1*g,x0=flatten_Tensor(self.tenpy,self.A),tol=self.cg_tol,M=precondition_LinOp,callback=None)
+        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=None)
         self.update_A(reshape_into_matrices(self.tenpy,delta,self.A))
         return self.A
