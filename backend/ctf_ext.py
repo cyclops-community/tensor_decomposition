@@ -86,3 +86,6 @@ def transpose(A):
 
 def argmax(A, axis=0):
     return abs(A).to_nparray().argmax(axis=axis)
+
+def reshape(A,shape,order='F'):
+    return ctf.reshape(A,shape,order)

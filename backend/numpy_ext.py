@@ -118,7 +118,7 @@ def argmax(A, axis=0):
 def qr(A):
     return la.qr(A)
 
-def reshape(A,shape,order):
+def reshape(A,shape,order='F'):
     return np.reshape(A,shape,order)
 
 def einsvd(operand, tns, transpose = True, compute_uv = True, full_matrices = True):

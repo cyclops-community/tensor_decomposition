@@ -56,6 +56,7 @@ def add_general_arguments(parser):
             'coil100',
             'timelapse',
             'scf',
+            'embedding',
             ],
         help='choose tensor to test, available: random, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
     parser.add_argument(

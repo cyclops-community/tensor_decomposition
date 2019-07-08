@@ -210,6 +210,9 @@ if __name__ == "__main__":
     elif tensor == "scf":
         T = real_tensors.get_scf_tensor(tenpy)
         O = None
+    elif tensor == "embedding":
+        T = real_tensors.get_bert_embedding_tensor(tenpy)
+        O = None
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
     Regu = args.regularization

@@ -171,3 +171,18 @@ def get_scf_tensor(tenpy):
         T[i] -= np.diag(np.diagonal(T[i])/2.)
  
     return T
+
+def get_bert_embedding_tensor(tenpy):
+
+    parent_dir = join(dirname(__file__), os.pardir)
+    data_dir = join(parent_dir, 'saved-tensors/')
+    try:
+        os.stat(data_dir+'BERT-word-embedding.npy')
+    except:
+        os.system('bash saved-tensors/download.sh embedding')  
+
+    tensor = tenpy.load_tensor_from_file(data_dir+'BERT-word-embedding.npy')
+    assert(tensor.shape == (30522, 768))
+    return tenpy.reshape(tensor[:30276,:], (174,174,768))
+
+
