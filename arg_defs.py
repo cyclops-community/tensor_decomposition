@@ -243,6 +243,12 @@ def add_nls_arguments(parser):
 	default=1e-04,
 	metavar='float',
 	help='tolerance for conjugate gradient method in nls (default: 1e-04)')
+    parser.add_argument(
+	'--grad-tol',
+	type=float,
+	default= 1e-05,
+	metavar='float',
+	help='tolerance for nls to stop the iteration (default: 1e-05)')
 
 def get_file_prefix(args):
         return "-".join(filter(None, [
