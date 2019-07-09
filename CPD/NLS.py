@@ -49,6 +49,7 @@ class CP_fastNLS_Optimizer():
         self.cg_tol = cg_tol
         self.G = None
         self.gamma = None
+        self.last_step_norm = 0
 
 
     def _einstr_builder(self,M,s,ii):
@@ -164,7 +165,7 @@ class CP_fastNLS_Optimizer():
     def update_A(self,delta):
         for i in range(len(delta)):
             self.A[i] += delta[i]
-    
+
 
 
     def step(self,Regu):
@@ -173,14 +174,15 @@ class CP_fastNLS_Optimizer():
             global cg_iters
             cg_iters= cg_iters+1
         """
-        
+
         self.compute_G()
         self.compute_gamma()
         g = self.gradient()
         mult_LinOp = self.create_fast_hessian_contract_LinOp(Regu)
         P = self.compute_block_diag_preconditioner(Regu)
         precondition_LinOp = self.create_block_precondition_LinOp(P)
-        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=None)
-	delta = reshape_into_matrices(self.tenpy,delta,self.A)
+        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=None,atol=self.last_step_norm)
+        self.last_step_norm = self.tenpy.norm(delta)
+	    delta = reshape_into_matrices(self.tenpy,delta,self.A)
         self.update_A(delta)
         return delta
