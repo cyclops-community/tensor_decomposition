@@ -49,7 +49,7 @@ class CP_fastNLS_Optimizer():
         self.cg_tol = cg_tol
         self.G = None
         self.gamma = None
-        self.last_step_norm = 0
+        self.last_step_norm = None
 
 
     def _einstr_builder(self,M,s,ii):
