@@ -230,6 +230,19 @@ def add_sparse_arguments(parser):
         metavar='int',
         help='TTTP-based sparse residual calculation (default: 0)')
 
+def add_nls_arguments(parser):
+    parser.add_argument(
+	'--nls-tol',
+	type=float,
+	default= 1e-05,
+	metavar='float',
+	help='tolerance for nls to stop the iteration (default: 1e-05)')
+    parser.add_argument(
+	'--cg-tol',
+	type=float,
+	default=1e-04,
+	metavar='float',
+	help='tolerance for conjugate gradient method in nls (default: 1e-04)')
 
 def get_file_prefix(args):
         return "-".join(filter(None, [

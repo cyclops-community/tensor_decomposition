@@ -17,7 +17,7 @@ from utils import save_decomposition_results
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-04):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
@@ -48,12 +48,13 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
             'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
             'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
             'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
-            'NLS': CP_fastNLS_Optimizer(tenpy,T,A)
+            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,cg_tol)
         }
         optimizer = optimizer_list[method]
 
     fitness_old = 0
     for i in range(num_iter):
+	
         if i % res_calc_freq ==0 or i==num_iter-1:
             if sp_res:
                 res = get_residual_sp(tenpy,O,T,A)
@@ -69,9 +70,12 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
 
         t0 = time.time()
         # Regu = 1/(i+1)
-        A = optimizer.step(Regu)
+        delta = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
+	if np.linalg.norm(delta)<nls_tol:
+		print('number of iterations to converge for nls:',i)
+		break
         time_all += t1-t0
         fitness_old = fitness
 
@@ -139,6 +143,7 @@ if __name__ == "__main__":
     arg_defs.add_pp_arguments(parser)
     arg_defs.add_lrdt_arguments(parser)
     arg_defs.add_sparse_arguments(parser)
+    arg_defs.add_nls_arguments(parser)
     args, _ = parser.parse_known_args()
 
     # Set up CSV logging
@@ -152,6 +157,8 @@ if __name__ == "__main__":
     order = args.order
     R = args.R
     r = args.r
+    nls_tol = args.nls_tol
+    cg_tol = args.cg_tol
     num_iter = args.num_iter
     num_lowr_init_iter = args.num_lowr_init_iter
     sp_frac = args.sp_fraction
@@ -234,6 +241,6 @@ if __name__ == "__main__":
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol)
     elif args.decomposition == "Tucker":
         Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq)
