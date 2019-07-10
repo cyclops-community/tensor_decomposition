@@ -121,7 +121,7 @@ def qr(A):
 def reshape(A,shape,order='F'):
     return np.reshape(A,shape,order)
 
-def einsvd(operand, tns, transpose = True, compute_uv = True, full_matrices = True):
+def einsvd(operand, tns, r=None, transpose=True, compute_uv=True, full_matrices=True, mult_sv=False):
     ''' compute SVD of tns
 
     oprand (str): in form 'src -> tgta, tgtb'
@@ -142,7 +142,7 @@ def einsvd(operand, tns, transpose = True, compute_uv = True, full_matrices = Tr
     trsped = np.einsum(src + '->' + new_idx, tns)
 
     # do svd
-    shape = np.shape(tns)
+    shape = tns.shape
     letter2size = {}
     for i in range(len(src)):
         letter2size[src[i]] = shape[i]
@@ -150,15 +150,21 @@ def einsvd(operand, tns, transpose = True, compute_uv = True, full_matrices = Tr
     ncol = 1
     for letter in col_idx:
         ncol *= letter2size[letter]
-    mat = np.reshape(trsped, (-1, ncol))
+    mat = trsped.reshape((-1, ncol))
     if not compute_uv:
-        s = np.linalg.svd(mat, compute_uv = False)
-        return s
-
+        return la.svd(mat, compute_uv=False)
+    
     # if u, v are needed
-    u, s, vh = np.linalg.svd(mat, full_matrices = full_matrices)
+    u, s, vh = la.svd(mat, full_matrices=full_matrices)
+    
+    if r != None and r < len(s):
+        u = u[:,:r]
+        s = s[:r]
+        vh = vh[:r,:]
+    if mult_sv:
+        vh = np.diag(s) @ vh
 
-    # reshape u, v into shape (..., contract) and (contract, ...)
+    # reshape u, v into shape (..., contract) and (contract, ...) 
     row_idx = tgta.replace(contract_idx, '')
     shapeA = []
     shapeB = [-1]
@@ -167,9 +173,9 @@ def einsvd(operand, tns, transpose = True, compute_uv = True, full_matrices = Tr
     for letter in col_idx:
         shapeB.append(letter2size[letter])
     shapeA.append(-1)
-    u = np.reshape(u, shapeA)
-    vh = np.reshape(vh, shapeB)
-
+    u = u.reshape(shapeA)
+    vh = vh.reshape(shapeB)
+    
     # transpose u and vh into tgta and tgtb
     preA = tgta.replace(contract_idx, '') + contract_idx
     preB = contract_idx + tgtb.replace(contract_idx, '')
@@ -180,3 +186,6 @@ def einsvd(operand, tns, transpose = True, compute_uv = True, full_matrices = Tr
     if not transpose:
         vh = np.conj(vh.T)
     return u, s, vh
+
+def squeeze(A):
+    return A.squeeze()
