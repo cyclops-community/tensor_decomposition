@@ -46,6 +46,9 @@ def sparse_random(shape, begin, end, sp_frac):
 def vecnorm(T):
     return la.norm(np.ravel(T))
 
+def norm(v):
+    return la.norm(v)
+
 def dot(A,B):
     return np.dot(A,B)
 
@@ -162,7 +165,7 @@ def einsvd(operand, tns, r=None, transpose=True, compute_uv=True, full_matrices=
         s = s[:r]
         vh = vh[:r,:]
     if mult_sv:
-        vh = np.diag(s) @ vh
+        vh = np.dot(np.diag(s),vh)
 
     # reshape u, v into shape (..., contract) and (contract, ...) 
     row_idx = tgta.replace(contract_idx, '')

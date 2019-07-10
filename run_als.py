@@ -69,7 +69,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
                     csv_writer.writerow([ i, time_all, res ])
 	if i != 0 and method == 'NLS':
 		#print('gradient norm is',np.linalg.norm(optimizer.gradient()))
-		if np.linalg.norm(optimizer.gradient()) < grad_tol:
+		if tenpy.vecnorm(optimizer.gradient()) < grad_tol:
 			print('Gradient norm less than tolerance in',i,'iterations')
 			break
         t0 = time.time()
@@ -77,7 +77,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
         delta = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
-	if np.linalg.norm(delta)<nls_tol:
+	if tenpy.vecnorm(delta)<nls_tol:
 		print('nls update norm is less than tolerance in:',i,' iterations')
 		break
         time_all += t1-t0

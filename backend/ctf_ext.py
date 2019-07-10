@@ -42,6 +42,9 @@ def sparse_random(shape, begin, end, sp_frac):
 def vecnorm(T):
     return ctf.vecnorm(T)
 
+def norm(v):
+    return ctf.norm2(v) 
+
 def dot(A,B):
     return ctf.dot(A,B)
 
