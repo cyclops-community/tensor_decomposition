@@ -156,10 +156,10 @@ def einsvd(operand, tns, r=None, transpose=True, compute_uv=True, full_matrices=
     mat = trsped.reshape((-1, ncol))
     if not compute_uv:
         return la.svd(mat, compute_uv=False)
-    
+
     # if u, v are needed
     u, s, vh = la.svd(mat, full_matrices=full_matrices)
-    
+
     if r != None and r < len(s):
         u = u[:,:r]
         s = s[:r]
@@ -167,7 +167,7 @@ def einsvd(operand, tns, r=None, transpose=True, compute_uv=True, full_matrices=
     if mult_sv:
         vh = np.dot(np.diag(s),vh)
 
-    # reshape u, v into shape (..., contract) and (contract, ...) 
+    # reshape u, v into shape (..., contract) and (contract, ...)
     row_idx = tgta.replace(contract_idx, '')
     shapeA = []
     shapeB = [-1]
@@ -178,7 +178,7 @@ def einsvd(operand, tns, r=None, transpose=True, compute_uv=True, full_matrices=
     shapeA.append(-1)
     u = u.reshape(shapeA)
     vh = vh.reshape(shapeB)
-    
+
     # transpose u and vh into tgta and tgtb
     preA = tgta.replace(contract_idx, '') + contract_idx
     preB = contract_idx + tgtb.replace(contract_idx, '')

@@ -1,4 +1,4 @@
-from CPD.common_kernels import compute_number_of_variables, flatten_Tensor, reshape_into_matrices, solve_sys
+from CPD.common_kernels import compute_sum_side_length,compute_number_of_variables, flatten_Tensor, reshape_into_matrices, solve_sys
 from scipy.sparse.linalg import LinearOperator
 import scipy.sparse.linalg as spsalg
 
@@ -16,7 +16,8 @@ def fast_hessian_contract(tenpy,X,A,gamma,regu=1):
             if n==p:
                 Y = tenpy.einsum("iz,zr->ir",X[p],M)
             else:
-                Y = tenpy.einsum("iz,zr,jr,jz->ir",A[n],M,A[p],X[p])
+                B = np.einsum("jr,jz->rz",A[p],X[p])
+                Y = np.einsum("iz,zr,rz->ir",A[n],M,B)
             if p==0:
                 ret.append(Y)
             else:
@@ -49,6 +50,8 @@ class CP_fastNLS_Optimizer():
         self.cg_tol = cg_tol
         self.G = None
         self.gamma = None
+        self.side_length = get_side_length(A)
+        self.last_step = tenpy.zeros((compute_sum_side_length(A),A[0].shape[1]))
         self.last_step_norm = None
 
 

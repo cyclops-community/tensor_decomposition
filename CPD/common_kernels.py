@@ -54,7 +54,7 @@ def flatten_Tensor(tenpy,G):
     start = 0
     for i in range(len(G)):
         end = start + G[i].shape[0]*G[i].shape[1]
-        g[start:end] = tenpy.reshape(G[i],-1)
+        g[start:end] = tenpy.reshape(G[i],-1,order='F')
         start = end
     return g
 
@@ -64,7 +64,7 @@ def reshape_into_matrices(tenpy,x,template):
     start = 0
     for i in range(len(template)):
         end = start + template[i].shape[0]*template[i].shape[1]
-        A = tenpy.reshape(x[start:end],template[i].shape)
+        A = tenpy.reshape(x[start:end],template[i].shape,order='F')
         ret.append(A)
         start = end
     return ret
