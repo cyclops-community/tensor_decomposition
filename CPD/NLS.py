@@ -16,8 +16,8 @@ def fast_hessian_contract(tenpy,X,A,gamma,regu=1):
             if n==p:
                 Y = tenpy.einsum("iz,zr->ir",X[p],M)
             else:
-                B = np.einsum("jr,jz->rz",A[p],X[p])
-                Y = np.einsum("iz,zr,rz->ir",A[n],M,B)
+                B = tenpy.einsum("jr,jz->rz",A[p],X[p])
+                Y = tenpy.einsum("iz,zr,rz->ir",A[n],M,B)
             if p==0:
                 ret.append(Y)
             else:
