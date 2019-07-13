@@ -1,4 +1,4 @@
-from CPD.common_kernels import compute_sum_side_length,compute_number_of_variables, flatten_Tensor, reshape_into_matrices, solve_sys
+from CPD.common_kernels import compute_number_of_variables, flatten_Tensor, reshape_into_matrices, solve_sys
 from scipy.sparse.linalg import LinearOperator
 import scipy.sparse.linalg as spsalg
 
@@ -50,8 +50,8 @@ class CP_fastNLS_Optimizer():
         self.cg_tol = cg_tol
         self.G = None
         self.gamma = None
-        self.side_length = get_side_length(A)
-        self.last_step = tenpy.zeros((compute_sum_side_length(A),A[0].shape[1]))
+        #self.side_length = get_side_length(A)
+        #self.last_step = tenpy.zeros((compute_sum_side_length(A),A[0].shape[1]))
         self.last_step_norm = None
 
 
