@@ -16,8 +16,8 @@ def fast_hessian_contract(tenpy,X,A,gamma,regu=1):
             if n==p:
                 Y = tenpy.einsum("iz,zr->ir",X[p],M)
             else:
-                B = np.einsum("jr,jz->rz",A[p],X[p])
-                Y = np.einsum("iz,zr,rz->ir",A[n],M,B)
+                B = tenpy.einsum("jr,jz->rz",A[p],X[p])
+                Y = tenpy.einsum("iz,zr,rz->ir",A[n],M,B)
             if p==0:
                 ret.append(Y)
             else:
@@ -186,6 +186,6 @@ class CP_fastNLS_Optimizer():
         precondition_LinOp = self.create_block_precondition_LinOp(P)
         [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=None,atol=self.last_step_norm)
         self.last_step_norm = self.tenpy.norm(delta)
-    	delta = reshape_into_matrices(self.tenpy,delta,self.A)
+        delta = reshape_into_matrices(self.tenpy,delta,self.A)
         self.update_A(delta)
         return delta
