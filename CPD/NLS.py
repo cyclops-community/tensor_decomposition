@@ -43,16 +43,17 @@ class CP_fastNLS_Optimizer():
     damped Gauss-Newton problem of CP decomposition.
     """
 
-    def __init__(self,tenpy,T,A,cg_tol=1e-4,args=None):
+    def __init__(self,tenpy,T,A,cg_tol=1e-4,num=1,args=None):
         self.tenpy = tenpy
         self.T = T
         self.A = A
         self.cg_tol = cg_tol
+        self.num=num
         self.G = None
         self.gamma = None
         #self.side_length = get_side_length(A)
         #self.last_step = tenpy.zeros((compute_sum_side_length(A),A[0].shape[1]))
-        self.last_step_norm = None
+        self.atol = None
 
 
     def _einstr_builder(self,M,s,ii):
@@ -184,8 +185,8 @@ class CP_fastNLS_Optimizer():
         mult_LinOp = self.create_fast_hessian_contract_LinOp(Regu)
         P = self.compute_block_diag_preconditioner(Regu)
         precondition_LinOp = self.create_block_precondition_LinOp(P)
-        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=None,atol=self.last_step_norm)
-        self.last_step_norm = self.tenpy.norm(delta)
+        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=None,atol=self.atol)
+        self.atol = self.num*self.tenpy.norm(delta)
         delta = reshape_into_matrices(self.tenpy,delta,self.A)
         self.update_A(delta)
         return delta

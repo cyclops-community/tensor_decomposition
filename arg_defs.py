@@ -232,23 +232,61 @@ def add_sparse_arguments(parser):
 
 def add_nls_arguments(parser):
     parser.add_argument(
-	'--nls-tol',
-	type=float,
-	default= 1e-05,
-	metavar='float',
-	help='tolerance for nls to stop the iteration (default: 1e-05)')
+    '--nls-tol',
+    type=float,
+    default= 1e-05,
+    metavar='float',
+    help='tolerance for nls to stop the iteration (default: 1e-05)')
     parser.add_argument(
-	'--cg-tol',
-	type=float,
-	default=1e-04,
-	metavar='float',
-	help='tolerance for conjugate gradient method in nls (default: 1e-04)')
+    '--cg-tol',
+    type=float,
+    default=1e-04,
+    metavar='float',
+    help='tolerance for conjugate gradient method in nls (default: 1e-04)')
     parser.add_argument(
-	'--grad-tol',
-	type=float,
-	default= 1e-05,
-	metavar='float',
-	help='tolerance for nls to stop the iteration (default: 1e-05)')
+    '--grad-tol',
+    type=float,
+    default= 1e-05,
+    metavar='float',
+    help='gradient tolerance for nls to stop the iteration (default: 1e-05)')
+    parser.add_argument(
+    '--num',
+    type=float,
+    default=1,
+    metavar='float',
+    help='For controlling the last step tolerance for nls (default:1)')
+
+def add_probability_arguments(parser):
+    parser.add_argument(
+    '--num-gen',
+    type=int,
+    default=10,
+    metavar='int',
+    help='number of problems generated (default:10)')
+    parser.add_argument(
+    '--num-init',
+    type=int,
+    default=5,
+    metavar='int',
+    help='number of initializations (default:5)')
+    parser.add_argument(
+    '--conv-tol',
+    type=float,
+    default= 5e-05,
+    metavar='float',
+    help='tolerance for residual for if the method has converged (default:5e-05)')
+    parser.add_argument(
+    '--f-R',
+    type=int,
+    default=3,
+    metavar='int',
+    help='First number for defining the range of R (default:3)')
+    parser.add_argument(
+    '--l-R',
+    type=int,
+    default=6,
+    metavar='int',
+    help='Last number (including) for defining the range of R (default:6)')
 
 def get_file_prefix(args):
         return "-".join(filter(None, [

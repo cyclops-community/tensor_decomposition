@@ -17,7 +17,7 @@ from utils import save_decomposition_results
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-04, grad_tol = 1e-05):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-04, grad_tol = 1e-05,num=1):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
@@ -48,13 +48,13 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
             'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
             'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
             'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
-            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,cg_tol)
+            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,cg_tol,num)
         }
         optimizer = optimizer_list[method]
 
     fitness_old = 0
     for i in range(num_iter):
-	
+
         if i % res_calc_freq ==0 or i==num_iter-1:
             if sp_res:
                 res = get_residual_sp(tenpy,O,T,A)
@@ -160,6 +160,7 @@ if __name__ == "__main__":
     nls_tol = args.nls_tol
     grad_tol = args.grad_tol
     cg_tol = args.cg_tol
+    num = args.num
     num_iter = args.num_iter
     num_lowr_init_iter = args.num_lowr_init_iter
     sp_frac = args.sp_fraction
@@ -242,6 +243,6 @@ if __name__ == "__main__":
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num)
     elif args.decomposition == "Tucker":
         Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq)
