@@ -135,6 +135,8 @@ class CP_fastNLS_Optimizer():
             g = -1*M + self.A[i].dot(self.gamma[i][i])
             grad.append(g)
         return self.tenpy.asarray(grad)
+        
+        
 
 
     def create_fast_hessian_contract_LinOp(self,Regu):
@@ -158,16 +160,14 @@ class CP_fastNLS_Optimizer():
         gamma = self.gamma
         tenpy = self.tenpy
         template = self.A
-
         result = fast_hessian_contract(tenpy,delta,A,gamma,Regu)
-
         return result
         
     def fast_conjugate_gradient(self,g,Regu):
         sh= np.shape(g)
         x = self.tenpy.random(sh)
         
-        tol = np.max([self.atol,self.cg_tol*self.tenpy.norm(g)])
+        tol = np.max([self.atol,self.cg_tol*self.tenpy.vecnorm(g)])
         
         r = -g - self.matvec(Regu,x)
         if self.tenpy.vecnorm(r)<tol:
@@ -180,13 +180,13 @@ class CP_fastNLS_Optimizer():
             
             alpha = self.tenpy.vecnorm(r)**2/self.tenpy.sum(self.tenpy.einsum('ijk,ijk->ijk',p,mv))
             
-            x += alpha*p
-            r_new = r - alpha*mv
+            x += np.multiply(alpha,p)
+            r_new = r - np.multiply(alpha,mv)
             
             if self.tenpy.vecnorm(r_new)<tol:
                 break
             beta = self.tenpy.vecnorm(r_new)**2/self.tenpy.vecnorm(r)**2
-            p = r_new + beta*p
+            p = r_new + np.multiply(beta,p)
             r = r_new
             counter += 1
             
@@ -222,7 +222,7 @@ class CP_fastNLS_Optimizer():
         
         self.atol = self.num*self.tenpy.norm(delta)
         
-        delta = reshape_into_matrices(self.tenpy,delta,self.A)
+        #delta = reshape_into_matrices(self.tenpy,delta,self.A)
         
         self.update_A(delta)
         
@@ -239,7 +239,7 @@ class CP_fastNLS_Optimizer():
 
         self.compute_G()
         self.compute_gamma()
-        g = self.gradient()
+        g = flatten_Tensor(self.tenpy,self.gradient())
         mult_LinOp = self.create_fast_hessian_contract_LinOp(Regu)
         P = self.compute_block_diag_preconditioner(Regu)
         precondition_LinOp = self.create_block_precondition_LinOp(P)

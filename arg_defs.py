@@ -252,9 +252,9 @@ def add_nls_arguments(parser):
     parser.add_argument(
     '--num',
     type=float,
-    default=1,
+    default=0,
     metavar='float',
-    help='For controlling the last step tolerance for nls (default:1)')
+    help='For controlling the last step tolerance for nls (default:0)')
 
 def add_probability_arguments(parser):
     parser.add_argument(
