@@ -67,10 +67,11 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
                 # write to csv file
                 if csv_writer is not None:
                     csv_writer.writerow([ i, time_all, res ])
-        if i != 0 and method == 'NLS':
+        '''if i != 0 and method == 'NLS':
             if tenpy.vecnorm(optimizer.gradient()) < grad_tol:
                 print('Gradient norm less than tolerance in',i,'iterations')
-                break
+                break'''
+            
         if res<nls_tol:
             print('Method converged in',i,'iterations')
             break

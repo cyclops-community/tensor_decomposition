@@ -134,7 +134,7 @@ class CP_fastNLS_Optimizer():
             M = s[-1][1]
             g = -1*M + self.A[i].dot(self.gamma[i][i])
             grad.append(g)
-        return self.tenpy.asarray(grad)
+        return grad
         
         
 
@@ -164,13 +164,15 @@ class CP_fastNLS_Optimizer():
         return result
         
     def fast_conjugate_gradient(self,g,Regu):
-        sh= np.shape(g)
-        x = self.tenpy.random(sh)
+    
+        x = [self.tenpy.random(A.shape) for A in g]
         
-        tol = np.max([self.atol,self.cg_tol*self.tenpy.vecnorm(g)])
+        tol = np.max([self.atol,self.cg_tol*self.tenpy.list_vecnorm(g)])
         
-        r = -g - self.matvec(Regu,x)
-        if self.tenpy.vecnorm(r)<tol:
+        
+        r = self.tenpy.list_add(self.tenpy.scalar_mul(-1,g), self.tenpy.scalar_mul(-1,self.matvec(Regu,x)))
+        
+        if self.tenpy.list_vecnorm(r)<tol:
             return x
         p = r
         counter = 0
@@ -178,19 +180,22 @@ class CP_fastNLS_Optimizer():
         while True:
             mv = self.matvec(Regu,p)
             
-            alpha = self.tenpy.vecnorm(r)**2/self.tenpy.sum(self.tenpy.einsum('ijk,ijk->ijk',p,mv))
+            alpha = self.tenpy.list_vecnormsq(r)/self.tenpy.mult_lists(p,mv)
             
-            x += np.multiply(alpha,p)
-            r_new = r - np.multiply(alpha,mv)
+            x = self.tenpy.list_add(x,self.tenpy.scalar_mul(alpha,p))
             
-            if self.tenpy.vecnorm(r_new)<tol:
+            r_new = self.tenpy.list_add(r, self.tenpy.scalar_mul(-1,self.tenpy.scalar_mul(alpha,mv)))
+            
+            if self.tenpy.list_vecnorm(r_new)<tol:
                 break
-            beta = self.tenpy.vecnorm(r_new)**2/self.tenpy.vecnorm(r)**2
-            p = r_new + np.multiply(beta,p)
+            beta = self.tenpy.list_vecnormsq(r_new)/self.tenpy.list_vecnormsq(r)
+            
+            p = self.tenpy.list_add(r_new, self.tenpy.scalar_mul(beta,p))
             r = r_new
             counter += 1
             
-        return x,counter
+        
+        return x
 
     def create_block_precondition_LinOp(self,P):
         num_var = compute_number_of_variables(self.A)
@@ -216,11 +221,11 @@ class CP_fastNLS_Optimizer():
     def step2(self,Regu):
         self.compute_G()
         self.compute_gamma()
-        g = self.gradient()
+        g= self.gradient()
         
-        [delta,iters] = self.fast_conjugate_gradient(g,Regu)
+        delta = self.fast_conjugate_gradient(g,Regu)
         
-        self.atol = self.num*self.tenpy.norm(delta)
+        self.atol = self.num*self.tenpy.list_vecnorm(delta)
         
         #delta = reshape_into_matrices(self.tenpy,delta,self.A)
         

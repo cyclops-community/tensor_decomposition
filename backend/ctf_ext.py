@@ -41,6 +41,31 @@ def sparse_random(shape, begin, end, sp_frac):
 
 def vecnorm(T):
     return ctf.vecnorm(T)
+    
+def list_vecnormsq(list_A):
+    l = [i**2 for i in list_A]
+    s = 0
+    for i in range(len(l)):
+        s+=ctf.sum(l[i])
+    return s
+    
+def list_vecnorm(list_A):
+    l = [i**2 for i in list_A]
+    s = 0
+    for i in range(len(l)):
+        s+=ctf.sum(l[i])
+        
+    return s**0.5
+    
+    
+def mult_lists(list_A,list_B):
+    l=[A*B for (A,B) in zip(list_A,list_B)]
+    s= 0
+    for i in range(len(l)):
+        s+=ctf.sum(l[i])
+        
+    return s
+    
 
 def norm(v):
     return v.norm2() 
@@ -89,6 +114,12 @@ def random(shape):
 
 def seed(seed):
     return ctf.random.seed(seed)
+    
+def list_add(list_A,list_B):
+    return [A+B for (A,B) in zip(list_A,list_B)]
+    
+def scalar_mul(sclr,list_A):
+    return [sclr*A for A in list_A]
 
 def speye(*args):
     return ctf.speye(*args)

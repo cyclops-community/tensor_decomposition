@@ -36,6 +36,27 @@ def printf(*string):
 
 def tensor(shape, sp, *args2):
     return np.ndarray(shape, *args2)
+    
+
+def list_add(list_A,list_B):
+    return [A+B for (A,B) in zip(list_A,list_B)]
+    
+def scalar_mul(sclr,list_A):
+    return [sclr*A for A in list_A]
+    
+def mult_lists(list_A,list_B):
+    l=[A*B for (A,B) in zip(list_A,list_B)]
+    
+    return np.sum(np.sum(l))
+    
+def list_vecnormsq(list_A):
+    l = [i**2 for i in list_A]
+    return np.sum(l)
+    
+def list_vecnorm(list_A):
+    l = [i**2 for i in list_A]
+    
+    return np.sqrt(np.sum(l))
 
 def sparse_random(shape, begin, end, sp_frac):
     tensor = np.random.random(shape)*(end-begin) + begin
