@@ -71,9 +71,15 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
             if tenpy.vecnorm(optimizer.gradient()) < grad_tol:
                 print('Gradient norm less than tolerance in',i,'iterations')
                 break
+        if res<nls_tol:
+            print('Method converged in',i,'iterations')
+            break
         t0 = time.time()
         # Regu = 1/(i+1)
-        delta = optimizer.step(Regu)
+        if method == 'NLS':
+            delta = optimizer.step2(Regu)
+        else:
+            delta = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
         time_all += t1-t0

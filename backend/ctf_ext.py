@@ -43,7 +43,7 @@ def vecnorm(T):
     return ctf.vecnorm(T)
 
 def norm(v):
-    return ctf.norm2(v) 
+    return v.norm2() 
 
 def dot(A,B):
     return ctf.dot(A,B)
@@ -101,6 +101,10 @@ def transpose(A):
 
 def argmax(A, axis=0):
     return abs(A).to_nparray().argmax(axis=axis)
+
+def asarray(T):
+    return ctf.astensor(T)
+    
 
 def reshape(A,shape,order='F'):
     return ctf.reshape(A,shape,order)

@@ -105,6 +105,9 @@ def random(shape):
 
 def seed(seed):
     return np.random.seed(seed)
+    
+def asarray(T):
+    return np.array(T)
 
 def speye(*args):
     return np.eye(*args)
