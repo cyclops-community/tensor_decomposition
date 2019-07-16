@@ -240,9 +240,9 @@ def add_nls_arguments(parser):
     parser.add_argument(
     '--cg-tol',
     type=float,
-    default=1e-04,
+    default=1e-09,
     metavar='float',
-    help='tolerance for conjugate gradient method in nls (default: 1e-04)')
+    help='tolerance for conjugate gradient method in nls (default: 1e-09)')
     parser.add_argument(
     '--grad-tol',
     type=float,
