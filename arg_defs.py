@@ -77,7 +77,8 @@ def add_general_arguments(parser):
             'DTLR',
             'PP',
             'partialPP',
-            'NLS'
+            'NLS',
+            'NLSALS'
             ],
         help='choose the optimization method: DT, PP, partialPP, DTLR (default: DT)')
     parser.add_argument(
@@ -255,6 +256,19 @@ def add_nls_arguments(parser):
     default=0,
     metavar='float',
     help='For controlling the last step tolerance for nls (default:0)')
+    parser.add_argument(
+    '--switch-tol',
+    type=float,
+    default= 0.1,
+    metavar='float',
+    help='tolerance for switching to nls (default: 0.1)')
+    parser.add_argument(
+    '--own-cg',
+    type=bool,
+    default= False,
+    metavar='bool',
+    help='cg implementation for nls (default: False)')
+    
 
 def add_probability_arguments(parser):
     parser.add_argument(

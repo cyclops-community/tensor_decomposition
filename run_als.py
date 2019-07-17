@@ -17,12 +17,12 @@ from utils import save_decomposition_results
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-04, grad_tol = 1e-05,num=1):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-12, grad_tol = 1e-05,num=1,switch_tol=0.1,own_cg=False):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
-    from CPD.NLS import CP_fastNLS_Optimizer
+    from CPD.NLS import CP_fastNLS_Optimizer, CP_ALSNLS_Optimizer
 
     T, transformer = None, None
     if args is not None:
@@ -48,7 +48,8 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
             'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
             'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
             'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
-            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,cg_tol,num)
+            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,cg_tol,num),
+            'NLSALS': CP_ALSNLS_Optimizer(tenpy,T,A,cg_tol,num,switch_tol)
         }
         optimizer = optimizer_list[method]
 
@@ -77,7 +78,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
             break
         t0 = time.time()
         # Regu = 1/(i+1)
-        if method == 'NLS':
+        if own_cg and method== 'NLS':
             delta = optimizer.step2(Regu)
         else:
             delta = optimizer.step(Regu)
@@ -167,6 +168,7 @@ if __name__ == "__main__":
     nls_tol = args.nls_tol
     grad_tol = args.grad_tol
     cg_tol = args.cg_tol
+    switch_tol = args.switch_tol
     num = args.num
     num_iter = args.num_iter
     num_lowr_init_iter = args.num_lowr_init_iter
@@ -174,6 +176,7 @@ if __name__ == "__main__":
     sp_res = args.sp_res
     tensor = args.tensor
     tlib = args.tlib
+    own_cg = args.own_cg
 
     if tlib == "numpy":
         import backend.numpy_ext as tenpy
@@ -250,6 +253,6 @@ if __name__ == "__main__":
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg)
     elif args.decomposition == "Tucker":
         Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq)

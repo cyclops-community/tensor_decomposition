@@ -1,5 +1,7 @@
 from CPD.common_kernels import compute_number_of_variables, flatten_Tensor, reshape_into_matrices, solve_sys
 from scipy.sparse.linalg import LinearOperator
+from CPD.standard_ALS import CP_DTALS_Optimizer
+
 import scipy.sparse.linalg as spsalg
 import numpy as np
 
@@ -236,11 +238,14 @@ class CP_fastNLS_Optimizer():
 
 
     def step(self,Regu):
-        """global cg_iters
+        """
+        """
+        global cg_iters
+        cg_iters =0
+        
         def cg_call(v):
             global cg_iters
             cg_iters= cg_iters+1
-        """
 
         self.compute_G()
         self.compute_gamma()
@@ -248,8 +253,49 @@ class CP_fastNLS_Optimizer():
         mult_LinOp = self.create_fast_hessian_contract_LinOp(Regu)
         P = self.compute_block_diag_preconditioner(Regu)
         precondition_LinOp = self.create_block_precondition_LinOp(P)
-        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=None,atol=self.atol)
+        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=cg_call,atol=self.atol)
         self.atol = self.num*self.tenpy.norm(delta)
         delta = reshape_into_matrices(self.tenpy,delta,self.A)
         self.update_A(delta)
+        self.tenpy.printf('cg iterations:',cg_iters)
+        return delta        
+
+class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
+    
+    def __init__(self,tenpy,T,A,cg_tol=1e-04,num=1,switch_tol= 1e-04, args=None):
+        CP_fastNLS_Optimizer.__init__(self,tenpy,T,A,cg_tol,num,args)
+        CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
+        self.tenpy = tenpy
+        self.switch_tol = switch_tol
+        self.switch = False
+        self.A = A
+        self.first = True 
+        
+    def _step_dt(self,Regu):
+        return CP_DTALS_Optimizer.step(self,Regu)
+        
+            
+    def _step_nls(self,Regu):
+        return CP_fastNLS_Optimizer.step(self,Regu)
+        
+    def step(self,Regu):
+        if self.switch:
+            self.tenpy.printf("performing nls")
+            delta = self._step_nls(Regu)
+            
+        else:
+            if not self.first:
+                A_prev=self.A[:]
+                delta = self._step_dt(Regu)
+                
+                
+                if self.tenpy.list_vecnorm(self.tenpy.list_add(self.A, self.tenpy.scalar_mul(-1,A_prev)))<self.switch_tol:
+                    self.switch = True
+                    self.tenpy.printf("will switch to nls")
+            else:
+                delta = self._step_dt(Regu)
+                self.first = False
+            
         return delta
+        
+        
