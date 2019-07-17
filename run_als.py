@@ -182,6 +182,9 @@ if __name__ == "__main__":
         import backend.numpy_ext as tenpy
     elif tlib == "ctf":
         import backend.ctf_ext as tenpy
+        import ctf
+        tepoch = ctf.timer_epoch("ALS")
+        tepoch.begin();
 
     if tenpy.is_master_proc():
         # print the arguments
@@ -256,3 +259,5 @@ if __name__ == "__main__":
         CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg)
     elif args.decomposition == "Tucker":
         Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq)
+    if tlib == "ctf":
+        tepoch.end()
