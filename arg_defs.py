@@ -149,7 +149,7 @@ def add_lrdt_arguments(parser):
         help='Run Dimension tree algorithm with low rank update on two of the factor matrices (default: 0)')
     parser.add_argument(
         '--do-lr-tol',
-        default=0,
+        default=1,
         type=int,
         metavar='int',
         help='Whether to perform low rank update by tolerance truncation.')
