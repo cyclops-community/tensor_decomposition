@@ -311,7 +311,7 @@ def get_file_prefix(args):
             's' + str(args.s),
             'R' + str(args.R),
             'r' + str(args.r),
-            'method' + str(args.method)
+            'method' + str(args.method),
             #'spfrac' + str(args.sp_fraction),
             #'splowrank' + str(args.sp_updatelowrank),
             #'runlowrank' + str(args.run_lowrank),
