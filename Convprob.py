@@ -16,7 +16,7 @@ from CPD.NLS import CP_fastNLS_Optimizer
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, method='NLS',num=1, Regu= 1e-05,cg_tol=1e-04,grad_tol = 1e-04,converged_tol = 5e-05):
+def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, method='DT',num=1, Regu= 1e-05,cg_tol=1e-04,grad_tol = 1e-04,converged_tol = 5e-05):
     
     conv = []
     

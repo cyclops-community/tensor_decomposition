@@ -78,7 +78,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
             break
         t0 = time.time()
         # Regu = 1/(i+1)
-        if own_cg and method== 'NLS':
+        if own_cg and method == 'NLS' :
             delta = optimizer.step2(Regu)
         else:
             delta = optimizer.step(Regu)

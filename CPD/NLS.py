@@ -167,7 +167,7 @@ class CP_fastNLS_Optimizer():
         
     def fast_conjugate_gradient(self,g,Regu):
     
-        x = [self.tenpy.random(A.shape) for A in g]
+        x = [self.tenpy.zeros(A.shape) for A in g]
         
         tol = np.max([self.atol,self.cg_tol*self.tenpy.list_vecnorm(g)])
         
@@ -262,7 +262,7 @@ class CP_fastNLS_Optimizer():
 
 class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
     
-    def __init__(self,tenpy,T,A,cg_tol=1e-04,num=1,switch_tol= 1e-04, args=None):
+    def __init__(self,tenpy,T,A,cg_tol=1e-04,num=1,switch_tol= 0.1, args=None):
         CP_fastNLS_Optimizer.__init__(self,tenpy,T,A,cg_tol,num,args)
         CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
         self.tenpy = tenpy
@@ -276,7 +276,7 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
         
             
     def _step_nls(self,Regu):
-        return CP_fastNLS_Optimizer.step(self,Regu)
+        return CP_fastNLS_Optimizer.step2(self,Regu)
         
     def step(self,Regu):
         if self.switch:
