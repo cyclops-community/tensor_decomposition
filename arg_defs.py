@@ -155,7 +155,7 @@ def add_lrdt_arguments(parser):
         help='Whether to perform low rank update by tolerance truncation.')
     parser.add_argument(
         '--lr-tol',
-        default=0,
+        default=0.9,
         type=float,
         metavar='float',
         help='Tolerance for low rank update truncation. This is the ratio of the singular values to be dropped. Can only be from 0 to 1.')
@@ -268,7 +268,7 @@ def add_nls_arguments(parser):
     default= False,
     metavar='bool',
     help='cg implementation for nls (default: False)')
-    
+
 
 def add_probability_arguments(parser):
     parser.add_argument(
