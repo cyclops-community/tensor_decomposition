@@ -149,13 +149,13 @@ def add_lrdt_arguments(parser):
         help='Run Dimension tree algorithm with low rank update on two of the factor matrices (default: 0)')
     parser.add_argument(
         '--do-lr-tol',
-        default=0,
+        default=1,
         type=int,
         metavar='int',
         help='Whether to perform low rank update by tolerance truncation.')
     parser.add_argument(
         '--lr-tol',
-        default=0,
+        default=0.1,
         type=float,
         metavar='float',
         help='Tolerance for low rank update truncation. This is the ratio of the singular values to be dropped. Can only be from 0 to 1.')
@@ -268,7 +268,7 @@ def add_nls_arguments(parser):
     default= False,
     metavar='bool',
     help='cg implementation for nls (default: False)')
-    
+
 
 def add_probability_arguments(parser):
     parser.add_argument(
@@ -311,6 +311,7 @@ def get_file_prefix(args):
             's' + str(args.s),
             'R' + str(args.R),
             'r' + str(args.r),
+            'method' + str(args.method),
             #'spfrac' + str(args.sp_fraction),
             #'splowrank' + str(args.sp_updatelowrank),
             #'runlowrank' + str(args.run_lowrank),
@@ -320,4 +321,5 @@ def get_file_prefix(args):
             #'numslices' + str(args.num_slices),
             #'numinit-iter' + str(args.num_lowr_init_iter),
             'regu' + str(args.regularization),
+            'tlib' + str(args.tlib)
         ]))
