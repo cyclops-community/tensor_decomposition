@@ -155,7 +155,7 @@ def add_lrdt_arguments(parser):
         help='Whether to perform low rank update by tolerance truncation.')
     parser.add_argument(
         '--lr-tol',
-        default=0.9,
+        default=0.1,
         type=float,
         metavar='float',
         help='Tolerance for low rank update truncation. This is the ratio of the singular values to be dropped. Can only be from 0 to 1.')
