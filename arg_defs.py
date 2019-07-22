@@ -313,11 +313,12 @@ def get_file_prefix(args):
             'r' + str(args.r),
             #'spfrac' + str(args.sp_fraction),
             #'splowrank' + str(args.sp_updatelowrank),
-            #'runlowrank' + str(args.run_lowrank),
+            'runlowrank' + str(args.run_lowrank),
             #'runlowrankdt' + str(args.run_lowrank_dt),
             #'numinteriter' + str(args.num_inter_iter),
             #'pois' + str(args.pois_test),
             #'numslices' + str(args.num_slices),
             #'numinit-iter' + str(args.num_lowr_init_iter),
             'regu' + str(args.regularization),
+            'tlib' + str(args.tlib)
         ]))
