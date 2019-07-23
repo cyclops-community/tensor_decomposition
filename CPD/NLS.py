@@ -104,7 +104,7 @@ class CP_fastNLS_Optimizer():
         n = self.gamma[0][0].shape[0]
         P = []
         for i in range(len(self.A)):
-            P.append(self.tenpy.cholesky(self.gamma[i][i]+self.tenpy.eye(n)))
+            P.append(self.tenpy.cholesky(self.gamma[i][i]+Regu*self.tenpy.eye(n)))
         return P
 
 
@@ -197,7 +197,51 @@ class CP_fastNLS_Optimizer():
             counter += 1
             
         
-        return x
+        return x,counter
+        
+    def fast_precond_conjugate_gradient(self,g,P,Regu):
+        x = [self.tenpy.zeros(A.shape) for A in g]
+        
+        tol = np.max([self.atol,self.cg_tol*self.tenpy.list_vecnorm(g)])
+        
+        r = self.tenpy.list_add(self.tenpy.scalar_mul(-1,g), self.tenpy.scalar_mul(-1,self.matvec(Regu,x)))
+        
+        if self.tenpy.list_vecnorm(r)<tol:
+            return x
+            
+        z = fast_block_diag_precondition(self.tenpy,r,P) 
+        
+        p = z
+        
+        counter = 0
+        while True:
+            mv = self.matvec(Regu,p)
+            
+            mul = self.tenpy.mult_lists(r,z)
+            
+            alpha = mul/self.tenpy.mult_lists(p,mv)
+            
+            x =self.tenpy.list_add(x,self.tenpy.scalar_mul(alpha,p))
+            
+            r_new = self.tenpy.list_add(r, self.tenpy.scalar_mul(-1,self.tenpy.scalar_mul(alpha,mv)))
+            
+            if self.tenpy.list_vecnorm(r_new)<tol:
+                break
+                
+            z_new = fast_block_diag_precondition(self.tenpy,r_new,P) 
+            
+            #if formula == "PR":
+            #    beta = np.inner(z_new,r_new-r)/np.inner(z,r)
+            #else:
+            beta = self.tenpy.mult_lists(r_new,z_new)/mul
+            
+            p = self.tenpy.list_add(z_new, self.tenpy.scalar_mul(beta,p))
+            
+            r = r_new
+            z = z_new
+            counter += 1
+            
+        return x,counter
 
     def create_block_precondition_LinOp(self,P):
         num_var = compute_number_of_variables(self.A)
@@ -225,12 +269,14 @@ class CP_fastNLS_Optimizer():
         self.compute_gamma()
         g= self.gradient()
         
-        delta = self.fast_conjugate_gradient(g,Regu)
+        P = self.compute_block_diag_preconditioner(Regu)
+        
+        #[delta,counter] = self.fast_conjugate_gradient(g,Regu)
+        
+        [delta,counter] = self.fast_precond_conjugate_gradient(g,P,Regu)
         
         self.atol = self.num*self.tenpy.list_vecnorm(delta)
-        
-        #delta = reshape_into_matrices(self.tenpy,delta,self.A)
-        
+        self.tenpy.printf('cg iterations:',counter)
         self.update_A(delta)
         
         return delta
@@ -251,9 +297,9 @@ class CP_fastNLS_Optimizer():
         self.compute_gamma()
         g = flatten_Tensor(self.tenpy,self.gradient())
         mult_LinOp = self.create_fast_hessian_contract_LinOp(Regu)
-        P = self.compute_block_diag_preconditioner(Regu)
-        precondition_LinOp = self.create_block_precondition_LinOp(P)
-        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,M=precondition_LinOp,callback=cg_call,atol=self.atol)
+        #P = self.compute_block_diag_preconditioner(Regu)
+        #precondition_LinOp = self.create_block_precondition_LinOp(P)
+        [delta,_] = spsalg.cg(mult_LinOp,-1*g,tol=self.cg_tol,callback=cg_call,atol=self.atol)
         self.atol = self.num*self.tenpy.norm(delta)
         delta = reshape_into_matrices(self.tenpy,delta,self.A)
         self.update_A(delta)
@@ -269,7 +315,8 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
         self.switch_tol = switch_tol
         self.switch = False
         self.A = A
-        self.first = True 
+        self.count = 0
+        self.count_tol = 50 
         
     def _step_dt(self,Regu):
         return CP_DTALS_Optimizer.step(self,Regu)
@@ -284,17 +331,21 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
             delta = self._step_nls(Regu)
             
         else:
-            if not self.first:
+            if self.count != 0:
                 A_prev=self.A[:]
                 delta = self._step_dt(Regu)
+                self.count+=1
+                if self.count > self.count_tol:
+                    self.switch = True
+                    self.tenpy.printf("count reached, will switch to nls")
                 
                 
                 if self.tenpy.list_vecnorm(self.tenpy.list_add(self.A, self.tenpy.scalar_mul(-1,A_prev)))<self.switch_tol:
                     self.switch = True
-                    self.tenpy.printf("will switch to nls")
+                    self.tenpy.printf("norm reached, will switch to nls")
             else:
                 delta = self._step_dt(Regu)
-                self.first = False
+                self.count += 1
             
         return delta
         
