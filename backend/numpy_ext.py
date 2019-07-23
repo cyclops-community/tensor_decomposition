@@ -36,26 +36,26 @@ def printf(*string):
 
 def tensor(shape, sp, *args2):
     return np.ndarray(shape, *args2)
-    
+
 
 def list_add(list_A,list_B):
     return [A+B for (A,B) in zip(list_A,list_B)]
-    
+
 def scalar_mul(sclr,list_A):
     return [sclr*A for A in list_A]
-    
+
 def mult_lists(list_A,list_B):
     l=[A*B for (A,B) in zip(list_A,list_B)]
-    
+
     return np.sum(np.sum(l))
-    
+
 def list_vecnormsq(list_A):
     l = [i**2 for i in list_A]
     return np.sum(l)
-    
+
 def list_vecnorm(list_A):
     l = [i**2 for i in list_A]
-    
+
     return np.sqrt(np.sum(l))
 
 def sparse_random(shape, begin, end, sp_frac):
@@ -94,19 +94,14 @@ def cholesky(A):
     return la.cholesky(A)
 
 def solve_tri(A, B, lower=True, from_left=True, transp_L=False):
-    if transp_L:
-        A = A.T
     if not from_left:
         B = B.T
-        if transp_L:
-            llower = lower
-        else:
-            A = A.T
-            llower = not lower
-        X = sla.solve_triangular(A, B, llower)
+        A = A.T
+        llower = not lower
+        X = sla.solve_triangular(A, B, trans=transp_L, lower=llower)
         return X.T
     else:
-        return sla.solve_triangular(A, B, lower)
+        return sla.solve_triangular(A, B, trans=transp_L,lower=lower)
 
 def einsum(string, *args):
     out = np.einsum(string, *args)
@@ -126,7 +121,7 @@ def random(shape):
 
 def seed(seed):
     return np.random.seed(seed)
-    
+
 def asarray(T):
     return np.array(T)
 
