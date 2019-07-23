@@ -269,11 +269,11 @@ class CP_fastNLS_Optimizer():
         self.compute_gamma()
         g= self.gradient()
         
-        P = self.compute_block_diag_preconditioner(Regu)
+        #P = self.compute_block_diag_preconditioner(Regu)
         
-        #[delta,counter] = self.fast_conjugate_gradient(g,Regu)
+        [delta,counter] = self.fast_conjugate_gradient(g,Regu)
         
-        [delta,counter] = self.fast_precond_conjugate_gradient(g,P,Regu)
+        #[delta,counter] = self.fast_precond_conjugate_gradient(g,P,Regu)
         
         self.atol = self.num*self.tenpy.list_vecnorm(delta)
         self.tenpy.printf('cg iterations:',counter)
