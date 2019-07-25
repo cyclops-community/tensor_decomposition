@@ -56,7 +56,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
     fitness_old = 0
     for i in range(num_iter):
 
-        if i % res_calc_freq ==0 or i==num_iter-1:
+        if i % res_calc_freq == 0 or i==num_iter-1:
             if sp_res:
                 res = get_residual_sp(tenpy,O,T,A)
             else:
@@ -67,7 +67,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
                 print("[",i,"] Residual is", res, "fitness is: ", fitness)
                 # write to csv file
                 if csv_writer is not None:
-                    csv_writer.writerow([ i, time_all, res ])
+                    csv_writer.writerow([i, time_all, res, fitness])
         '''if i != 0 and method == 'NLS':
             if tenpy.vecnorm(optimizer.gradient()) < grad_tol:
                 print('Gradient norm less than tolerance in',i,'iterations')
@@ -119,18 +119,22 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT'
     }
     optimizer = optimizer_list[method]
 
+    normT = tenpy.vecnorm(T)
+
     for i in range(num_iter):
-        if i % res_calc_freq ==0 or i==num_iter-1:
+        if i % res_calc_freq == 0 or i==num_iter-1:
             if sp_res:
                 # TODO: implement the get residual sparse version
-                res = get_residual_sp(tenpy,O,T,A)
+                res = get_residual_sp(tenpy,O,T,optimizer.A)
             else:
-                res = get_residual(tenpy,T,A)
+                res = get_residual(tenpy,T,optimizer.A)
+            fitness = 1-res/normT
+
             if tenpy.is_master_proc():
-                print("[",i,"] Residual is", res)
+                print("[",i,"] Residual is", res, "fitness is: ", fitness)
                 # write to csv file
                 if csv_writer is not None:
-                    csv_writer.writerow([ i, time_all, res ])
+                    csv_writer.writerow([i, time_all, res, fitness])
         t0 = time.time()
         A = optimizer.step(Regu)
         t1 = time.time()
@@ -193,7 +197,7 @@ if __name__ == "__main__":
         # initialize the csv file
         if is_new_log:
             csv_writer.writerow([
-                'iterations', 'time', 'residual'
+                'iterations', 'time', 'residual', 'fitness'
             ])
 
     tenpy.seed(args.seed)
@@ -235,6 +239,9 @@ if __name__ == "__main__":
     elif tensor == "embedding":
         T = real_tensors.get_bert_embedding_tensor(tenpy)
         O = None
+    elif tensor == "bert-param":
+        T = real_tensors.get_bert_weights_tensor(tenpy)
+        O = None
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
     Regu = args.regularization
@@ -258,6 +265,6 @@ if __name__ == "__main__":
         # TODO: it doesn't support sparse calculation with hosvd here
         CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg)
     elif args.decomposition == "Tucker":
-        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq)
+        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args,args.res_calc_freq)
     if tlib == "ctf":
         tepoch.end()

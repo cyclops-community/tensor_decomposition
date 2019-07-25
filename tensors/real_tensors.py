@@ -152,10 +152,17 @@ def get_scf_tensor(tenpy):
 
     from pyscf import gto, scf
 
-    mol = gto.Mole(basis='def2-tzvp')
-    n = 20
-    mol.atom = [['H',(0, 0, 0)]]
-    mol.atom.extend([['H', (i, i, i)] for i in range(1,n)])
+    mol = gto.Mole(basis='sto-3g')
+    n = 8
+    mol.atom = [['O',(0, 0, 0)],['H',( 0, 1, 0)],['H',(0, 0, 1)]]
+    mol.atom.extend([['O',(i, 0, 0)] for i in range(1,n)])
+    mol.atom.extend([['H',(i, 1, 0)] for i in range(1,n)])
+    mol.atom.extend([['H',(i, 0, 1)] for i in range(1,n)])
+
+    # mol = gto.Mole(basis='def2-tzvp')
+    # n = 20
+    # mol.atom = [['H',(0, 0, 0)]]
+    # mol.atom.extend([['H', (i, i, i)] for i in range(1,n)])
     print(mol.atom)
     mf = scf.RHF(mol).density_fit().run()
     T_sym = mf.with_df._cderi
@@ -184,5 +191,27 @@ def get_bert_embedding_tensor(tenpy):
     tensor = tenpy.load_tensor_from_file(data_dir+'BERT-word-embedding.npy')
     assert(tensor.shape == (30522, 768))
     return tenpy.reshape(tensor[:30276,:], (174,174,768))
+
+
+def get_bert_weights_tensor(tenpy):
+
+    parent_dir = join(dirname(__file__), os.pardir)
+    data_dir = join(parent_dir, 'saved-tensors/')
+    try:
+        os.stat(data_dir+'bert_param')
+    except:
+        os.system('cd saved-tensors; bash download.sh bert-param')  
+        os.system('cd saved-tensors; tar -xzf bert_param.tar.gz')
+
+    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/querys.npy')
+    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/keys.npy')
+    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/values.npy')
+    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/outputs.npy')
+    tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/intermediate_denses.npy')
+    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/output_denses.npy')
+    # assert(tensor.shape == (12, 768, 768))
+    assert(tensor.shape == (12, 3072, 768))
+    # assert(tensor.shape == (12, 768, 3072))
+    return tensor#tenpy.reshape(tensor[0,:,:], (1,3072,768))
 
 

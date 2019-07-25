@@ -5,6 +5,12 @@ from als.ALS_optimizer import DTALS_base, PPALS_base
 
 class Tucker_DTALS_Optimizer(DTALS_base):
 
+    def __init__(self,tenpy,T,A):
+        DTALS_base.__init__(self,tenpy,T,A)
+        self.tucker_rank = []
+        for i in range(len(A)):
+            self.tucker_rank.append(A[i].shape[1])
+
     def _einstr_builder(self,M,s,ii):
         nd = M.ndim
 
@@ -16,7 +22,7 @@ class Tucker_DTALS_Optimizer(DTALS_base):
 
     def _solve(self,i,Regu,s):
         # NOTE: Regu is not used here
-        return n_mode_eigendec(self.tenpy, s[-1][1], i, rank=self.R, do_flipsign=True)
+        return n_mode_eigendec(self.tenpy, s[-1][1], i, rank=self.tucker_rank[i], do_flipsign=True)
 
 
 class Tucker_PPALS_Optimizer(PPALS_base, Tucker_DTALS_Optimizer):
