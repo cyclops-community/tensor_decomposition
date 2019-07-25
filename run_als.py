@@ -17,12 +17,16 @@ from utils import save_decomposition_results
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-12, grad_tol = 1e-05,num=1,switch_tol=0.1,own_cg=False):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-12, grad_tol = 1e-05,num=1,switch_tol=0.1,own_cg=False):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
     from CPD.NLS import CP_fastNLS_Optimizer, CP_ALSNLS_Optimizer
+
+    if csv_file is not None:
+        csv_writer = csv.writer(
+            csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
     T, transformer = None, None
     if args is not None:
@@ -66,8 +70,9 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
             if tenpy.is_master_proc():
                 print("[",i,"] Residual is", res, "fitness is: ", fitness)
                 # write to csv file
-                if csv_writer is not None:
+                if csv_file is not None:
                     csv_writer.writerow([i, time_all, res, fitness])
+                    csv_file.flush()
         '''if i != 0 and method == 'NLS':
             if tenpy.vecnorm(optimizer.gradient()) < grad_tol:
                 print('Gradient norm less than tolerance in',i,'iterations')
@@ -107,10 +112,14 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_writer=None,Regu=None,meth
 
     return res
 
-def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT',args=None,res_calc_freq=1):
+def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',args=None,res_calc_freq=1):
 
     from Tucker.common_kernels import get_residual_sp, get_residual
     from Tucker.standard_ALS import Tucker_DTALS_Optimizer, Tucker_PPALS_Optimizer
+
+    if csv_file is not None:
+        csv_writer = csv.writer(
+            csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
     time_all = 0.
     optimizer_list = {
@@ -133,8 +142,9 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer=None,Regu=None,method='DT'
             if tenpy.is_master_proc():
                 print("[",i,"] Residual is", res, "fitness is: ", fitness)
                 # write to csv file
-                if csv_writer is not None:
+                if csv_file is not None:
                     csv_writer.writerow([i, time_all, res, fitness])
+                    csv_file.flush()
         t0 = time.time()
         A = optimizer.step(Regu)
         t1 = time.time()
@@ -263,8 +273,8 @@ if __name__ == "__main__":
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg)
     elif args.decomposition == "Tucker":
-        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_writer,Regu,args.method,args,args.res_calc_freq)
+        Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method,args,args.res_calc_freq)
     if tlib == "ctf":
         tepoch.end()
