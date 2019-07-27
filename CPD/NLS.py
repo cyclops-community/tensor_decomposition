@@ -4,6 +4,7 @@ from CPD.standard_ALS import CP_DTALS_Optimizer
 
 import scipy.sparse.linalg as spsalg
 import numpy as np
+import time
 
 try:
     import Queue as queue
@@ -14,20 +15,22 @@ def fast_hessian_contract(tenpy,X,A,gamma,regu=1):
     N = len(A)
     ret = []
     for n in range(N):
+        ret.append(tenpy.zeros(A[n].shape))
         for p in range(N):
             M = gamma[n][p]
             if n==p:
-                Y = tenpy.einsum("iz,zr->ir",X[p],M)
+                ret[n] += tenpy.einsum("iz,zr->ir",X[p],M)
             else:
+                time0 = time.time()
                 B = tenpy.einsum("jr,jz->rz",A[p],X[p])
-                Y = tenpy.einsum("iz,zr,rz->ir",A[n],M,B)
-            if p==0:
-                ret.append(Y)
-            else:
-                ret[n] += Y
+                time1 = time.time()
+                ret[n] += tenpy.einsum("iz,zr,rz->ir",A[n],M,B)
+                time2 = time.time()
+                tenpy.printf("compute B took ",time1-time0," seconds.")
+                tenpy.printf("compute ret took ",time2-time1,"seconds.")
+                #Y = tenpy.einsum("iz,zr,jr,jz->ir",A[n],M,A[p],X[p])
 
-    for i in range(N):
-        ret[i] += regu*X[i]
+        ret[n] += regu*X[n]
 
     return ret
 
@@ -158,11 +161,17 @@ class CP_fastNLS_Optimizer():
         return V
 
     def matvec(self,Regu,delta):
+        #t = ctf.time("total fast hessian multiplication")
+        t0 = time.time()
+        #t.start()
         A = self.A
         gamma = self.gamma
         tenpy = self.tenpy
         template = self.A
         result = fast_hessian_contract(tenpy,delta,A,gamma,Regu)
+        t1 = time.time()
+        #t.end()
+        self.tenpy.printf("fast hessian contract took ",t1-t0,"seconds.")
         return result
 
     def fast_conjugate_gradient(self,g,Regu):
