@@ -26,8 +26,8 @@ def fast_hessian_contract(tenpy,X,A,gamma,regu=1):
                 time1 = time.time()
                 ret[n] += tenpy.einsum("iz,zr,rz->ir",A[n],M,B)
                 time2 = time.time()
-                tenpy.printf("compute B took ",time1-time0," seconds.")
-                tenpy.printf("compute ret took ",time2-time1,"seconds.")
+                #tenpy.printf("compute B took ",time1-time0," seconds.")
+                #tenpy.printf("compute ret took ",time2-time1,"seconds.")
                 #Y = tenpy.einsum("iz,zr,jr,jz->ir",A[n],M,A[p],X[p])
 
         ret[n] += regu*X[n]
@@ -171,7 +171,7 @@ class CP_fastNLS_Optimizer():
         result = fast_hessian_contract(tenpy,delta,A,gamma,Regu)
         t1 = time.time()
         #t.end()
-        self.tenpy.printf("fast hessian contract took ",t1-t0,"seconds.")
+        #self.tenpy.printf("fast hessian contract took ",t1-t0,"seconds.")
         return result
 
     def fast_conjugate_gradient(self,g,Regu):
