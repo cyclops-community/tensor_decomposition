@@ -22,8 +22,11 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
-    from CPD.NLS import CP_fastNLS_Optimizer, CP_ALSNLS_Optimizer
+    from CPD.NLS import CP_fastNLS_Optimizer, CP_ALSNLS_Optimizer,CP_safeNLS_Optimizer
 
+
+    als_iter = 30
+    
     if csv_file is not None:
         csv_writer = csv.writer(
             csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -53,7 +56,8 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
             'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
             'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
             'NLS': CP_fastNLS_Optimizer(tenpy,T,A,cg_tol,num),
-            'NLSALS': CP_ALSNLS_Optimizer(tenpy,T,A,cg_tol,num,switch_tol)
+            'NLSALS': CP_ALSNLS_Optimizer(tenpy,T,A,cg_tol,num,switch_tol),
+            'SNLS': CP_safeNLS_Optimizer(tenpy,T,A,cg_tol,num,als_iter)
         }
         optimizer = optimizer_list[method]
 

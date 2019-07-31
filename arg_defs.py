@@ -79,7 +79,8 @@ def add_general_arguments(parser):
             'PP',
             'partialPP',
             'NLS',
-            'NLSALS'
+            'NLSALS',
+            'SNLS'
             ],
         help='choose the optimization method: DT, PP, partialPP, DTLR (default: DT)')
     parser.add_argument(
