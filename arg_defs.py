@@ -270,6 +270,18 @@ def add_nls_arguments(parser):
     default= False,
     metavar='bool',
     help='cg implementation for nls (default: False)')
+    parser.add_argument(
+    '--nls-iter',
+    type=int,
+    default= 2,
+    metavar='int',
+    help='Number of NLS iterations (default: 2)')
+    parser.add_argument(
+    '--als-iter',
+    type=int,
+    default= 30,
+    metavar='int',
+    help='Number of ALS iterations (default: 30)')
 
 
 def add_probability_arguments(parser):

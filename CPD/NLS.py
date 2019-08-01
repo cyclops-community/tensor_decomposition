@@ -291,7 +291,7 @@ class CP_fastNLS_Optimizer():
         self.tenpy.printf('cg iterations:',counter)
         self.update_A(delta)
 
-        return delta
+        return self.A
 
 
 
@@ -317,7 +317,8 @@ class CP_fastNLS_Optimizer():
         delta = reshape_into_matrices(self.tenpy,delta,self.A)
         self.update_A(delta)
         self.tenpy.printf('cg iterations:',cg_iters)
-        return delta
+        
+        return self.A
 
 class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
 
@@ -334,24 +335,31 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
     def _step_dt(self,Regu):
         return CP_DTALS_Optimizer.step(self,Regu)
 
-
-    
-    
         
     def _step_nls(self,Regu):
         
         return CP_fastNLS_Optimizer.step2(self,Regu)
 
 
+
+    def copy_A(self):
+        A_copy = []
+        for i in range(len(self.A)):
+            A_copy+=[self.A[i].copy()]
+        
+        return A_copy
+        
+        
     def step(self,Regu):
         if self.switch:
             self.tenpy.printf("performing nls")
-            delta = self._step_nls(Regu)
+            self.A = self._step_nls(Regu)
 
         else:
             if self.count != 0:
-                A_prev=self.A[:]
-                delta = self._step_dt(Regu)
+                A_prev= self.copy_A()
+                
+                self.A = self._step_dt(Regu)
                 self.count+=1
                 if self.count > self.count_tol:
                     self.switch = True
@@ -361,15 +369,17 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
                     self.switch = True
                     self.tenpy.printf("norm reached, will switch to nls")
             else:
-                delta = self._step_dt(Regu)
+                self.A = self._step_dt(Regu)
                 self.count += 1
 
-        return delta
+        return self.A
         
         
 class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
 
-    def __init__(self,tenpy,T,A,cg_tol=1e-04,num=0,als_iter= 10, args=None):
+    def __init__(self,tenpy,T,A,cg_tol=1e-04,num=0,als_iter= 10, nls_iter = 2, args=None):
+        CP_fastNLS_Optimizer.__init__(self,tenpy,T,A,cg_tol,num,args)
+        CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
         self.tenpy = tenpy
         self.switch = True
         self.A = A
@@ -378,8 +388,8 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
         self.als_iter = als_iter
         self.prev_res = get_residual(tenpy,T,A)
         self.nls_steps= 0
-        CP_fastNLS_Optimizer.__init__(self,tenpy,self.T,self.A,cg_tol,num,args)
-        CP_DTALS_Optimizer.__init__(self,tenpy,self.T,self.A)
+        self.nls_iter = nls_iter
+        
         
         
 
@@ -394,50 +404,32 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
             
             
     def _step_nls(self,Regu):
-    
-        CP_fastNLS_Optimizer.compute_G(self)
-        CP_fastNLS_Optimizer.compute_gamma(self)
-        g= CP_fastNLS_Optimizer.gradient(self)
-
-        P = CP_fastNLS_Optimizer.compute_block_diag_preconditioner(self,Regu)
-
-        #[delta,counter] = CP_fastNLS_Optimizer.fast_conjugate_gradient(self,g,Regu)
-
-        [delta,counter] = CP_fastNLS_Optimizer.fast_precond_conjugate_gradient(self,g,P,Regu)
-
-        #CP_fastNLS_Optimizer.atol = CP_fastNLS_Optimizer.num(self)*self.tenpy.list_vecnorm(self,delta)
         
-        self.tenpy.printf('cg iterations:',counter)
+        return CP_fastNLS_Optimizer.step2(self,Regu)
         
-        return delta
+     
+     
+    def copy_A(self):
+        A_copy = []
+        for i in range(len(self.A)):
+            A_copy+=[self.A[i].copy()]
         
+        return A_copy
         
 
     def step(self,Regu):
         if self.switch:
             
             self.count = 0
-             
-            A_prev = self.A[:]
             
-            
-            
+            A_prev =self.copy_A()
             
             self.tenpy.printf("performing nls")
             
-            for i in range(1):
-                #delta = CP_fastNLS_Optimizer.step2(self,Regu)
-                delta = self._step_nls(Regu)
+            for i in range(self.nls_iter):
+                self.A = self._step_nls(Regu)
             
- 
-            self.update_A(delta)  
             curr_res = get_residual(self.tenpy,self.T,self.A)
-            
-            #self.tenpy.printf(self.A)
-            
-            
-            
-            #self.tenpy.printf(A_prev)
             
             if curr_res<= self.prev_res:
                 self.prev_res = curr_res
@@ -446,7 +438,7 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
             else:
                 self.tenpy.printf("Residual increased for NLS, will switch to ALS")
                 self.switch = False
-                #self.A = A_prev[:] 
+                self.A = A_prev[:] 
                 
             
 
@@ -463,4 +455,4 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
 
 
         self.tenpy.printf("number of nls steps performed", self.nls_steps)
-        return delta
+        return self.A
