@@ -142,7 +142,17 @@ class CP_fastNLS_Optimizer():
             grad.append(g)
         return grad
 
+    def power_method(self,l,iter=1):
+        for i in range(iter):
+            l = fast_hessian_contract(self.tenpy,l,self.A,self.gamma,0)
+            a = self.tenpy.list_vecnorm(l)
+            l = self.tenpy.scalar_mul(1/a,l)
+        return l
 
+    def rayleigh_quotient(self,l):
+        a = self.tenpy.mult_lists(l,fast_hessian_contract(self.tenpy,l,self.A,self.gamma,0))
+        b = self.tenpy.list_vecnormsq(l)
+        return a/b
 
 
     def create_fast_hessian_contract_LinOp(self,Regu):
@@ -307,6 +317,9 @@ class CP_fastNLS_Optimizer():
 
         self.compute_G()
         self.compute_gamma()
+        #l = self.power_method([self.tenpy.random(M.shape) for M in self.A])
+        #L2 = self.rayleigh_quotient(l)
+        #print("L2 norm of hessian is ",L2)
         g = flatten_Tensor(self.tenpy,self.gradient())
         mult_LinOp = self.create_fast_hessian_contract_LinOp(Regu)
         P = self.compute_block_diag_preconditioner(Regu)
