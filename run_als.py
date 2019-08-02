@@ -41,6 +41,8 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
 
     if Regu is None:
         Regu = 0
+        
+    orig_Regu = Regu
 
     normT = tenpy.vecnorm(T)
 
@@ -93,6 +95,9 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
         time_all += t1-t0
         fitness_old = fitness
+        Regu = Regu/1.5
+        if Regu < 1e-06:
+            Regu= orig_Regu
 
     if hosvd != 0:
         A_fullsize = []

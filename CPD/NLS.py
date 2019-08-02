@@ -62,6 +62,7 @@ class CP_fastNLS_Optimizer():
         #self.side_length = get_side_length(A)
         #self.last_step = tenpy.zeros((compute_sum_side_length(A),A[0].shape[1]))
         self.atol = 0
+        self.total_iters = 0
 
 
     def _einstr_builder(self,M,s,ii):
@@ -296,24 +297,22 @@ class CP_fastNLS_Optimizer():
         #[delta,counter] = self.fast_conjugate_gradient(g,Regu)
 
         [delta,counter] = self.fast_precond_conjugate_gradient(g,P,Regu)
-
+        
+        self.total_iters+= counter
         self.atol = self.num*self.tenpy.list_vecnorm(delta)
         self.tenpy.printf('cg iterations:',counter)
         self.update_A(delta)
-
+        
+        self.tenpy.printf("total cg iterations",self.total_iters)
+        
         return self.A
 
 
 
     def step(self,Regu):
-        """
-        """
-        global cg_iters
-        cg_iters =0
-
+        
         def cg_call(v):
-            global cg_iters
-            cg_iters= cg_iters+1
+            self.total_iters+=1
 
         self.compute_G()
         self.compute_gamma()
@@ -329,7 +328,7 @@ class CP_fastNLS_Optimizer():
         self.atol = self.num*self.tenpy.norm(delta)
         delta = reshape_into_matrices(self.tenpy,delta,self.A)
         self.update_A(delta)
-        self.tenpy.printf('cg iterations:',cg_iters)
+        self.tenpy.printf('total cg iterations:',self.total_iters)
         
         return self.A
 

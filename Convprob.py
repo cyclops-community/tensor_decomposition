@@ -19,6 +19,7 @@ results_dir = join(parent_dir, 'results')
 def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, method='DT',num=1, Regu= 1e-05,cg_tol=1e-04,grad_tol = 1e-04,converged_tol = 5e-05):
     
     conv = []
+    orig_Regu = Regu
     
     for R in range(f_R,l_R+1):
         
@@ -44,6 +45,8 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                 N = C.copy()
 
                 X = [A,B,C]
+                
+                Regu = orig_Regu
 
                 optimizer_list = {
                 'DT': CP_DTALS_Optimizer(tenpy,T,X),
@@ -51,15 +54,25 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                  }
                 optimizer = optimizer_list[method]
 
-                res = ck.get_residual3(tenpy,T,X[0],X[1],X[2])
-                print('Residual is',res)
-
+                prev_res = ck.get_residual3(tenpy,T,X[0],X[1],X[2])
+                #print('Residual is',prev_res)
+                
                 start = time.time()
                 for i in range(num_iter):
                     delta = optimizer.step(Regu)
 
                     res = ck.get_residual3(tenpy,T,X[0],X[1],X[2])
-
+                    
+                    Regu = Regu/1.5
+                    
+                    if Regu < 1e-05:
+                        #print("Changed REGU")
+                        Regu = 1
+                        
+                    if abs(prev_res - res)< 1e-06:
+                        break
+                    
+                    print("residual is",res)
                     if res< converged_tol:
                         converged= 1
                         break
@@ -67,7 +80,7 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                 end = time.time()
                 
                 res = ck.get_residual3(tenpy,T,X[0],X[1],X[2])
-                print('Residual after convergence is',res)
+                #print('Residual after convergence is',res)
 
                 if converged:
                     converged_method+=1
