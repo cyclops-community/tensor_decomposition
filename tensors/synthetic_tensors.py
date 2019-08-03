@@ -31,7 +31,8 @@ def init_rand3(tenpy,s,R,sp_frac=1.):
     C = tenpy.random((s,R))
     return [A,B,C,T,O]
 
-def init_mm(tenpy,s,R):
+def init_mm(tenpy,s,R,seed = 1):
+    tenpy.seed(seed*1001)
     sr = int(np.sqrt(s)+.1)
     assert(sr*sr==s)
     T = tenpy.tensor((sr,sr,sr,sr,sr,sr),sp=True)
@@ -39,13 +40,13 @@ def init_mm(tenpy,s,R):
     I = tenpy.speye(sr)
     #F.i("ijkl") << I.i("ik")*I.i("jl");
     #tenpy.einsum("ijab,klbc,mnca->ijklmn",F,F,F,out=T)
-    tenpy.einsum("ia,jb,kb,lc,mc,na->ijklmn",I,I,I,I,I,I,out=T)
+    T = tenpy.einsum("ia,jb,kb,lc,mc,na->ijklmn",I,I,I,I,I,I)
     T = T.reshape((s,s,s))
     O = T
-    A = tenpy.random((s,R))
-    B = tenpy.random((s,R))
-    C = tenpy.random((s,R))
-    return [A,B,C,T,O]
+    #A = tenpy.random((s,R))
+    #B = tenpy.random((s,R))
+    #C = tenpy.random((s,R))
+    return [T,O]
 
 def init_poisson(s,R):
     sr = int(s**(1./2)+.1)

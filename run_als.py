@@ -45,6 +45,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
     orig_Regu = Regu
 
     normT = tenpy.vecnorm(T)
+    
 
     time_all = 0.
     if args is None:
@@ -96,7 +97,8 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
         time_all += t1-t0
         fitness_old = fitness
         Regu = Regu/1.5
-        if Regu < 1e-06:
+        if Regu < 1e-05:
+            print("CHANGED REGU")
             Regu= orig_Regu
 
     if hosvd != 0:
@@ -261,6 +263,10 @@ if __name__ == "__main__":
     elif tensor == "bert-param":
         T = real_tensors.get_bert_weights_tensor(tenpy)
         O = None
+    elif tensor == "mm":
+        tenpy.printf("Testing matrix multiplication tensor")
+        [T,O] = synthetic_tensors.init_mm(tenpy,s,R,args.seed)
+        
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
     Regu = args.regularization
