@@ -330,7 +330,7 @@ class CP_fastNLS_Optimizer():
         self.update_A(delta)
         self.tenpy.printf('total cg iterations:',self.total_iters)
         
-        return self.A
+        return [self.A,self.total_iters]
 
 class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
 

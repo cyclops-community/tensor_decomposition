@@ -42,7 +42,11 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
     if Regu is None:
         Regu = 0
         
-    orig_Regu = Regu
+    decrease= True
+    increase=False
+    
+    
+    flag = False
 
     normT = tenpy.vecnorm(T)
     
@@ -88,18 +92,49 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
             break
         t0 = time.time()
         # Regu = 1/(i+1)
+        print("Regu is:",Regu)
         if own_cg and method == 'NLS' :
-            A = optimizer.step2(Regu)
+            [A,iters] = optimizer.step2(Regu)
+        elif method == 'NLS':
+            [A,iters] = optimizer.step(Regu)
         else:
             A = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
         time_all += t1-t0
         fitness_old = fitness
-        Regu = Regu/1.5
-        if Regu < 1e-05:
-            print("CHANGED REGU")
-            Regu= orig_Regu
+        
+        
+        if method == "NLS" :
+            if fitness > 0.999:
+                flag = True
+            
+            if flag:   
+                Regu = 1e-05
+                
+            else:
+                if Regu < 1e-05:
+                    increase=True
+                    decrease=False
+                    
+                if Regu > 1e-01:
+                    decrease= True
+                    increase=False
+                    
+                
+                
+            if increase:
+                Regu = Regu*2
+                
+            elif decrease:
+                Regu = Regu/2
+        
+            #if Regu < 1e-03:
+            #    print("CHANGED REGU")
+            #    Regu= orig_Regu
+        
+            
+        
 
     if hosvd != 0:
         A_fullsize = []

@@ -22,8 +22,6 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
     orig_Regu = Regu
     
     for R in range(f_R,l_R+1):
-        
-        converged_method=0.0
 
         for k in range(num_gen):
             a = tenpy.random((s,R))
@@ -32,9 +30,11 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
 
             T = tenpy.einsum('ia,ja,ka->ijk', a,b,c)
 
-            converged = 0
-
             for j in range(num_init):
+                total_iters = 0
+                converged = 0
+                t_all = 0.0
+                
                 A = tenpy.random((s,R))
                 P = A.copy()
 
@@ -59,32 +59,49 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                 
                 start = time.time()
                 for i in range(num_iter):
+                    if method == 'NLS':
+                        [delta,iters] = optimizer.step(Regu)
+                        total_iters+= iters
+                        
                     delta = optimizer.step(Regu)
-
+                    
+                    
+                    
                     res = ck.get_residual3(tenpy,T,X[0],X[1],X[2])
                     
-                    Regu = Regu/1.5
+                    if method == "NLS":
                     
-                    if Regu < 1e-05:
-                        #print("Changed REGU")
-                        Regu = 1
+                        Regu = Regu/1.5
                         
-                    if abs(prev_res - res)< 1e-06:
+                        if Regu < 1e-05:
+                            #print("Changed REGU")
+                            Regu = 1
+                            
+                    if abs(prev_res - res)< 1e-05:
                         break
+                        
+                        #print("residual is",res)
                     
-                    print("residual is",res)
                     if res< converged_tol:
                         converged= 1
                         break
+                    
+                    prev_res = res
 
                 end = time.time()
                 
                 res = ck.get_residual3(tenpy,T,X[0],X[1],X[2])
                 #print('Residual after convergence is',res)
-
-                if converged:
-                    converged_method+=1
-                    break
+                
+                t_all+= end - start
+                    
+                if tenpy.is_master_proc():
+                    # write to csv file
+                    if csv_writer is not None:
+                        if method != 'NLS':
+                            csv_writer.writerow([ k, j, i,t_all, res, converged])
+                        else:
+                            csv_writer.writerow([ k, j, total_iters,t_all, res, converged])
 
 
 
@@ -106,16 +123,7 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                 #print('state is',state)
                 print('Residual with atol is',res)"""
 
-        
-        conv+=[converged_method/num_gen]
-        if tenpy.is_master_proc():
-                # write to csv file
-                if csv_writer is not None:
-                    csv_writer.writerow([ s, R, i, res, converged_method/num_gen ])
     
-    print('conv=',conv)
-    
-    return conv
 
 
 if __name__ == "__main__":
@@ -165,7 +173,7 @@ if __name__ == "__main__":
         # initialize the csv file
         if is_new_log:
             csv_writer.writerow([
-                'iterations', 'time', 'residual'
+                'problem', 'initialization','iterations', 'time', 'residual','converged'
             ])
 
     convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer,num_init,args.method,num,Regu,cg_tol,grad_tol,conv_tol)
