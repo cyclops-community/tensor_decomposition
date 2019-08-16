@@ -301,6 +301,9 @@ if __name__ == "__main__":
     elif tensor == "mm":
         tenpy.printf("Testing matrix multiplication tensor")
         [T,O] = synthetic_tensors.init_mm(tenpy,s,R,args.seed)
+    elif tensor == "negrandom":
+        tenpy.printf("Testing random tensor with negative entries")
+        [T,O] = synthetic_tensors.init_neg_rand(tenpy,order,s,R,sp_frac,args.seed)
         
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 

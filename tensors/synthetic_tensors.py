@@ -16,6 +16,22 @@ def init_rand(tenpy,order,s,R,sp_frac=1.,seed=1):
         O = None
     return [T,O]
 
+
+def init_neg_rand(tenpy,order,s,R,sp_frac=1.,seed=1):
+    tenpy.seed(seed*1001)
+    A = []
+    for i in range(order):
+        A.append(-1*tenpy.random((s,R)) + tenpy.random((s,R)))
+    if sp_frac<1.:
+        O = tenpy.sparse_random([s]*order,1.,1.,sp_frac)
+        T = tenpy.TTTP(O,A)
+    else:
+        T = tenpy.ones([s]*order)
+        T = tenpy.TTTP(T,A)
+        O = None
+    return [T,O]
+    
+
 def init_rand3(tenpy,s,R,sp_frac=1.):
     A = tenpy.random((s,R))
     B = tenpy.random((s,R))

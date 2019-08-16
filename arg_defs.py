@@ -58,7 +58,8 @@ def add_general_arguments(parser):
             'scf',
             'embedding',
             'bert-param',
-            'mm'
+            'mm',
+            'negrandom'
             ],
         help='choose tensor to test, available: random, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
     parser.add_argument(
