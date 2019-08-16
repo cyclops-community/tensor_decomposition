@@ -60,14 +60,17 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                 start = time.time()
                 for i in range(num_iter):
                     if method == 'NLS':
-                        [delta,iters] = optimizer.step(Regu)
+                        [delta,iters] = optimizer.step2(Regu)
                         total_iters+= iters
                         
-                    delta = optimizer.step(Regu)
-                    
-                    
+                    else:
+                        delta = optimizer.step(Regu)
+                 
                     
                     res = ck.get_residual3(tenpy,T,X[0],X[1],X[2])
+                    
+                    if abs(prev_res - res)< 1e-07:
+                        break
                     
                     if method == "NLS":
                     
@@ -77,11 +80,6 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                             #print("Changed REGU")
                             Regu = 1
                             
-                    if abs(prev_res - res)< 1e-05:
-                        break
-                        
-                        #print("residual is",res)
-                    
                     if res< converged_tol:
                         converged= 1
                         break

@@ -305,7 +305,7 @@ class CP_fastNLS_Optimizer():
         
         self.tenpy.printf("total cg iterations",self.total_iters)
         
-        return self.A
+        return [self.A,self.total_iters]
 
 
 
@@ -406,7 +406,7 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
         
 
     def _step_dt(self,Regu):
-        return CP_DTALS_Optimizer.step(self,Regu)
+        return CP_DTALS_Optimizer.step(self,0)
 
 
 
@@ -438,8 +438,11 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
             
             self.tenpy.printf("performing nls")
             
+            if self.prev_res <5:
+                Regu = 1e-05
+            
             for i in range(self.nls_iter):
-                self.A = self._step_nls(Regu)
+                [self.A,iters] = self._step_nls(Regu)
             
             curr_res = get_residual(self.tenpy,self.T,self.A)
             

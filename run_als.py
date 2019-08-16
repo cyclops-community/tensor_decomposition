@@ -116,11 +116,11 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
                 if Regu < 1e-05:
                     increase=True
                     decrease=False
-                    
+                
                 if Regu > 1e-01:
                     decrease= True
                     increase=False
-                    
+                        
                 
                 
             if increase:
