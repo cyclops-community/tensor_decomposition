@@ -16,7 +16,7 @@ from CPD.NLS import CP_fastNLS_Optimizer
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, method='DT',num=1, Regu= 1e-05,cg_tol=1e-04,grad_tol = 1e-04,converged_tol = 5e-05):
+def convprob(tenpy,tensor,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, method='DT',num=1, Regu= 1e-05,cg_tol=1e-04,grad_tol = 1e-04,converged_tol = 5e-05):
     
     conv = []
     orig_Regu = Regu
@@ -24,7 +24,12 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
     for R in range(f_R,l_R+1):
 
         for k in range(num_gen):
-            a = tenpy.random((s,R))
+            if tensor == 'negrandom':
+                a = tenpy.random((s,R)) - tenpy.random((s,R))
+                b = tenpy.random((s,R)) - tenpy.random((s,R))
+                c = tenpy.random((s,R)) - tenpy.random((s,R))
+                
+            a = tenpy.random((s,R)) 
             b = tenpy.random((s,R))
             c = tenpy.random((s,R))
 
@@ -72,13 +77,27 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                     if abs(prev_res - res)< 1e-07:
                         break
                     
-                    if method == "NLS":
-                    
-                        Regu = Regu/1.5
+                    if method == "NLS" :
+                        if fitness > 0.999:
+                            flag = True
+            
+                        if flag:   
+                            Regu = 1e-05
+                
+                        else:
+                            if Regu < 1e-05:
+                                increase=True
+                                decrease=False
+                
+                            if Regu > 1e-01:
+                                decrease= True
+                                increase=False
                         
-                        if Regu < 1e-05:
-                            #print("Changed REGU")
-                            Regu = 1
+                            if increase:
+                                Regu = Regu*2
+                
+                            elif decrease:
+                                Regu = Regu/2
                             
                     if res< converged_tol:
                         converged= 1
@@ -97,29 +116,9 @@ def convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer=None,num_init = 10, met
                     # write to csv file
                     if csv_writer is not None:
                         if method != 'NLS':
-                            csv_writer.writerow([ k, j, i,t_all, res, converged])
+                            csv_writer.writerow([ R, k, j, i,t_all, res, converged])
                         else:
-                            csv_writer.writerow([ k, j, total_iters,t_all, res, converged])
-
-
-
-                """for i in range(als_iter):
-                    Regu = 10**-6
-                    tolerance = 10**-5
-
-                    [P,Q,N]= stnd_ALS.dt_ALS_step(tenpy,T,P,Q,N,Regu)
-                    res = ck.get_residual3(tenpy,T,P,Q,N)
-                    if res<tolerance:
-                        print('Iterations',i)
-                        break
-
-                end = time.time()
-
-
-                print("Time taken for als",end-start)
-                res = ck.get_residual3(tenpy,T,X[0],X[1],X[2])
-                #print('state is',state)
-                print('Residual with atol is',res)"""
+                            csv_writer.writerow([ R, k, j, total_iters,t_all, res, converged])
 
     
 
@@ -134,7 +133,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     
     # Set up CSV logging
-    csv_path = join(results_dir, arg_defs.get_file_prefix(args)+'.csv')
+    csv_path = join(results_dir, 'Convprob'+arg_defs.get_prob_file_prefix(args)+'.csv')
     is_new_log = not Path(csv_path).exists()
     csv_file = open(csv_path, 'a')#, newline='')
     csv_writer = csv.writer(
@@ -171,7 +170,7 @@ if __name__ == "__main__":
         # initialize the csv file
         if is_new_log:
             csv_writer.writerow([
-                'problem', 'initialization','iterations', 'time', 'residual','converged'
+                'R','problem', 'initialization','iterations', 'time', 'residual','converged'
             ])
 
-    convprob(tenpy,s,f_R,l_R,num_iter,num_gen,csv_writer,num_init,args.method,num,Regu,cg_tol,grad_tol,conv_tol)
+    convprob(tenpy,tensor,s,f_R,l_R,num_iter,num_gen,csv_writer,num_init,args.method,num,Regu,cg_tol,grad_tol,conv_tol)

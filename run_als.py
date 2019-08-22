@@ -45,7 +45,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
     decrease= True
     increase=False
     
-    
+    cg_iters = 0
     flag = False
 
     normT = tenpy.vecnorm(T)
@@ -80,7 +80,10 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
                 print("[",i,"] Residual is", res, "fitness is: ", fitness)
                 # write to csv file
                 if csv_file is not None:
-                    csv_writer.writerow([i, time_all, res, fitness])
+                    if method == 'NLS':
+                        csv_writer.writerow([cg_iters, time_all, res, fitness])
+                    else:
+                        csv_writer.writerow([i, time_all, res, fitness])
                     csv_file.flush()
         '''if i != 0 and method == 'NLS':
             if tenpy.vecnorm(optimizer.gradient()) < grad_tol:
@@ -99,9 +102,14 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
             [A,iters] = optimizer.step(Regu)
         else:
             A = optimizer.step(Regu)
+            
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
+        cg_iters+= iters
         time_all += t1-t0
+        
+            
+        
         fitness_old = fitness
         
         
