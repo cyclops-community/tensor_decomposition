@@ -189,7 +189,7 @@ if __name__ == "__main__":
     import backend.numpy_ext as tenpy
 
     R = args.R
-    res_calc_freq = 1
+    res_calc_freq = 10
 
     csv_path = join(results_dir, get_file_prefix(args) + '.csv')
     is_new_log = not Path(csv_path).exists()
@@ -225,7 +225,7 @@ if __name__ == "__main__":
     time_all = 0.
 
     for i in range(2000):
-        if i % res_calc_freq == 0 or i == num_iter - 1:
+        if i % res_calc_freq == 0 or i == 2000 - 1:
             res = get_residual(tenpy, T, [X, Y, Y])
             fitness = 1 - res / normT
             if tenpy.is_master_proc():
