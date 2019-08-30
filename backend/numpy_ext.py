@@ -5,6 +5,9 @@ import scipy.linalg as sla
 def name():
     return 'numpy'
 
+def diag(v):
+    return np.diag(v)
+
 def save_tensor_to_file(T, filename):
     np.save(filename, T)
 

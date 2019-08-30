@@ -4,6 +4,9 @@ import numpy as np
 def name():
     return 'ctf'
 
+def diag(v):
+    return ctf.diag(v)
+
 def save_tensor_to_file(T, filename):
     np.save(filename, T.to_nparray())
 

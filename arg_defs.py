@@ -50,6 +50,7 @@ def add_general_arguments(parser):
         metavar='string',
         choices=[
             'random',
+            'random_col',
             'mom_cons',
             'mom_cons_sv',
             'amino',
@@ -61,7 +62,7 @@ def add_general_arguments(parser):
             'mm',
             'negrandom'
             ],
-        help='choose tensor to test, available: random, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
+        help='choose tensor to test, available: random, random_col, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
     parser.add_argument(
         '--tlib',
         default="ctf",
@@ -143,6 +144,14 @@ def add_pp_arguments(parser):
         type=float,
         metavar='float',
         help='used in pairwise perturbation optimizer, tolerance for dimention tree restart')
+
+def add_col_arguments(parser):
+    parser.add_argument(
+        '--col',
+        type=float,
+        nargs='+',
+        default=[0.2, 0.8],
+        help='collinearity range')
 
 def add_lrdt_arguments(parser):
     parser.add_argument(
