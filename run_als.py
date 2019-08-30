@@ -223,6 +223,7 @@ if __name__ == "__main__":
     arg_defs.add_lrdt_arguments(parser)
     arg_defs.add_sparse_arguments(parser)
     arg_defs.add_nls_arguments(parser)
+    arg_defs.add_col_arguments(parser)
     args, _ = parser.parse_known_args()
 
     # Set up CSV logging
@@ -284,6 +285,8 @@ if __name__ == "__main__":
             shape = s * np.ones(order).astype(int)
             T = tenpy.random(shape)
             O = None
+    elif tensor == "random_col":
+        [T,O] = synthetic_tensors.init_collinearity_tensor(tenpy, s, order, R, args.col, args.seed)
     elif tensor == "mom_cons":
         tenpy.printf("Testing order 4 momentum conservation tensor")
         T = synthetic_tensors.init_mom_cons(tenpy,s)
