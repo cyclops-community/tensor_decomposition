@@ -284,6 +284,12 @@ def add_nls_arguments(parser):
     default= 30,
     metavar='int',
     help='Number of ALS iterations (default: 30)')
+    parser.add_argument(
+    '--maxiter',
+    type= int,
+    default= 0,
+    metavar ='int',
+    help ='Number of cg iterations for NLS (default: Nsr)')
 
 
 def add_probability_arguments(parser):

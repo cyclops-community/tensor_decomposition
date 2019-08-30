@@ -46,8 +46,11 @@ def scalar_mul(sclr,list_A):
 
 def mult_lists(list_A,list_B):
     l=[A*B for (A,B) in zip(list_A,list_B)]
-
-    return np.sum(np.sum(l))
+    s = 0
+    for i in range(len(l)):
+        s+=np.sum(l[i])
+        
+    return s
 
 def list_vecnormsq(list_A):
     l = [i**2 for i in list_A]
@@ -55,8 +58,12 @@ def list_vecnormsq(list_A):
 
 def list_vecnorm(list_A):
     l = [i**2 for i in list_A]
-
-    return np.sqrt(np.sum(l))
+    s = 0
+    for i in range(len(l)):
+        s+=np.sum(l[i])
+        
+    return s**0.5
+    
 
 def sparse_random(shape, begin, end, sp_frac):
     tensor = np.random.random(shape)*(end-begin) + begin

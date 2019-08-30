@@ -4,6 +4,7 @@ from os.path import dirname, join
 from scipy.io import loadmat
 from .utils import download_unzip_data, load_images_from_folder
 
+
 def amino_acids(tenpy):
     """
     Data: 
@@ -176,7 +177,8 @@ def get_scf_tensor(tenpy):
         T[i][np.triu_indices(N)] = T_sym[i][:]
         T[i] += T[i].T
         T[i] -= np.diag(np.diagonal(T[i])/2.)
- 
+    if tenpy.name() == 'ctf':
+        return tenpy.from_nparray(T)
     return T
 
 def get_bert_embedding_tensor(tenpy):

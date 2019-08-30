@@ -51,7 +51,7 @@ class CP_fastNLS_Optimizer():
     damped Gauss-Newton problem of CP decomposition.
     """
 
-    def __init__(self,tenpy,T,A,cg_tol=1e-4,num=1,args=None):
+    def __init__(self,tenpy,T,A,maxiter,cg_tol=1e-4,num=1,args=None):
         self.tenpy = tenpy
         self.T = T
         self.A = A
@@ -63,6 +63,7 @@ class CP_fastNLS_Optimizer():
         #self.last_step = tenpy.zeros((compute_sum_side_length(A),A[0].shape[1]))
         self.atol = 0
         self.total_iters = 0
+        self.maxiter = maxiter
 
 
     def _einstr_builder(self,M,s,ii):
@@ -198,7 +199,7 @@ class CP_fastNLS_Optimizer():
         if self.tenpy.list_vecnorm(r)<tol:
             return x
         p = r
-        counter = 0
+        counter = 1
 
         while True:
             mv = self.matvec(Regu,p)
@@ -217,6 +218,8 @@ class CP_fastNLS_Optimizer():
             r = r_new
             counter += 1
 
+            if counter == self.maxiter:
+                break
 
         return x,counter
 
@@ -234,7 +237,7 @@ class CP_fastNLS_Optimizer():
 
         p = z
 
-        counter = 0
+        counter = 1
         while True:
             mv = self.matvec(Regu,p)
 
@@ -261,6 +264,9 @@ class CP_fastNLS_Optimizer():
             r = r_new
             z = z_new
             counter += 1
+            
+            if counter == self.maxiter:
+                break
 
         return x,counter
 
@@ -389,8 +395,8 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
         
 class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
 
-    def __init__(self,tenpy,T,A,cg_tol=1e-04,num=0,als_iter= 10, nls_iter = 2, args=None):
-        CP_fastNLS_Optimizer.__init__(self,tenpy,T,A,cg_tol,num,args)
+    def __init__(self,tenpy,T,A, maxiter, cg_tol=1e-04,num=0,als_iter= 10, nls_iter = 2, args=None):
+        CP_fastNLS_Optimizer.__init__(self,tenpy,T,A,maxiter,cg_tol,num,args)
         CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
         self.tenpy = tenpy
         self.switch = True
@@ -429,8 +435,9 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
         return A_copy
         
 
-    def step(self,Regu):
+    def step(self,Regu,res,fitness):
         if self.switch:
+            self.prev_res = res
             
             self.count = 0
             
@@ -438,7 +445,7 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
             
             self.tenpy.printf("performing nls")
             
-            if self.prev_res <5:
+            if fitness>= 0.999:
                 Regu = 1e-05
             
             for i in range(self.nls_iter):
@@ -448,7 +455,7 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
             
             if curr_res<= self.prev_res:
                 self.prev_res = curr_res
-                self.nls_steps+=1
+                self.nls_steps+=self.nls_iter
                 
             else:
                 self.tenpy.printf("Residual increased for NLS, will switch to ALS")
@@ -458,9 +465,9 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
             
 
         else:
+            self.prev_res = res
             delta = self._step_dt(Regu)
             self.count+=1
-            self.prev_res = get_residual(self.tenpy,self.T,self.A)
                 
             if self.count == self.als_iter:
                 self.switch = True
@@ -471,3 +478,4 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
 
         self.tenpy.printf("number of nls steps performed", self.nls_steps)
         return self.A
+

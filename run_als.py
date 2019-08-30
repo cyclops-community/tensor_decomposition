@@ -17,7 +17,7 @@ from utils import save_decomposition_results
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-12, grad_tol = 1e-05,num=1,switch_tol=0.1,own_cg=False,nls_iter = 2, als_iter = 30):
+def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-12, grad_tol = 1e-05,num=1,switch_tol=0.1,own_cg=False,nls_iter = 2, als_iter = 30, maxiter =0):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
@@ -45,11 +45,14 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
     decrease= True
     increase=False
     
-    cg_iters = 0
     flag = False
+    iters = 0
 
     normT = tenpy.vecnorm(T)
     
+    if maxiter == 0:
+        maxiter = len(A)*(A[0].shape[0])*(A[0].shape[1])
+        
 
     time_all = 0.
     if args is None:
@@ -60,9 +63,9 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
             'DTLR': CP_DTLRALS_Optimizer(tenpy,T,A,args),
             'PP': CP_PPALS_Optimizer(tenpy,T,A,args),
             'partialPP': CP_partialPPALS_Optimizer(tenpy,T,A,args),
-            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,cg_tol,num),
+            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,maxiter,cg_tol,num,args),
             'NLSALS': CP_ALSNLS_Optimizer(tenpy,T,A,cg_tol,num,switch_tol),
-            'SNLS': CP_safeNLS_Optimizer(tenpy,T,A,cg_tol,num,als_iter,nls_iter)
+            'SNLS': CP_safeNLS_Optimizer(tenpy,T,A, maxiter,cg_tol,num,als_iter,nls_iter)
         }
         optimizer = optimizer_list[method]
 
@@ -81,7 +84,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
                 # write to csv file
                 if csv_file is not None:
                     if method == 'NLS':
-                        csv_writer.writerow([cg_iters, time_all, res, fitness])
+                        csv_writer.writerow([iters, time_all, res, fitness])
                     else:
                         csv_writer.writerow([i, time_all, res, fitness])
                     csv_file.flush()
@@ -100,12 +103,15 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
             [A,iters] = optimizer.step2(Regu)
         elif method == 'NLS':
             [A,iters] = optimizer.step(Regu)
+            
+        elif method == 'SNLS':
+            A = optimizer.step(Regu,res,fitness)
         else:
             A = optimizer.step(Regu)
             
         t1 = time.time()
         tenpy.printf("[",i,"] Sweep took", t1-t0,"seconds")
-        cg_iters+= iters
+        
         time_all += t1-t0
         
             
@@ -114,11 +120,10 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
         
         
         if method == "NLS" :
-            if fitness > 0.999:
+            if res < 1:
                 flag = True
             
-            if flag:   
-                Regu = 1e-05
+            
                 
             else:
                 if Regu < 1e-05:
@@ -243,6 +248,7 @@ if __name__ == "__main__":
     sp_frac = args.sp_fraction
     sp_res = args.sp_res
     tensor = args.tensor
+    maxiter = args.maxiter
     tlib = args.tlib
     own_cg = args.own_cg
 
@@ -334,7 +340,7 @@ if __name__ == "__main__":
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg,nls_iter, als_iter)
+        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg,nls_iter, als_iter,maxiter)
     elif args.decomposition == "Tucker":
         Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method,args,args.res_calc_freq)
     if tlib == "ctf":
