@@ -141,26 +141,25 @@ def collinearity(v1, v2, tenpy):
 def init_collinearity_tensor(tenpy, s, order, R,
                              col=[0.2, 0.8],
                              seed=1):
+
+    assert(col[0] >= 0. and col[1] <= 1.)
+    assert(s >= R)
     tenpy.seed(seed * 1001)
 
     A = []
     for i in range(order):
-        if s > R:
-            Gamma = tenpy.random((R, R)) * (col[1] - col[0]) + col[0]
-            [U, sigma, VT] = tenpy.svd(Gamma)
-            mat = tenpy.random((s, s))
-            [U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
-            A_i = tenpy.dot(tenpy.diag(sigma**.5), VT)
-            A_i = tenpy.dot(U_mat[:, :R], A_i)
-        else:
-            Gamma_L = tenpy.random((s, R))
-            Gamma = tenpy.dot(tenpy.transpose(Gamma_L), Gamma_L)
-            Gamma_min, Gamma_max = Gamma.min(), Gamma.max()
-            Gamma = (Gamma - Gamma_min) / (Gamma_max - Gamma_min) * \
-                (col[1] - col[0]) + col[0]
-            [U, sigma, VT] = tenpy.svd(Gamma)
-            A_i = tenpy.dot(tenpy.diag(sigma**.5)[:s, :], VT)
-        A.append(A_i)
+        Gamma_L = tenpy.random((s, R))
+        Gamma = tenpy.dot(tenpy.transpose(Gamma_L), Gamma_L)
+        Gamma_min, Gamma_max = Gamma.min(), Gamma.max()
+        Gamma = (Gamma - Gamma_min) / (Gamma_max - Gamma_min) * \
+            (col[1] - col[0]) + col[0]
+        tenpy.fill_diagonal(Gamma, 1.)
+        A_iT = tenpy.cholesky(Gamma)
+        # change size from [R,R] to [s,R]
+        mat = tenpy.random((s, s))
+        A_iT = tenpy.dot(A_iT, VT_mat[:R, :])
+
+        A.append(tenpy.transpose(A_iT))
         col_matrix = tenpy.dot(tenpy.transpose(A[i]), A[i])
         col_matrix_min, col_matrix_max = col_matrix.min(), (col_matrix - \
                                                         tenpy.eye(R, R)).max()

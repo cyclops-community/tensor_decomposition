@@ -339,7 +339,10 @@ if __name__ == "__main__":
             A = hosvd(tenpy, T, args.hosvd_core_dim, compute_core=False)
     else:
         for i in range(T.ndim):
-            A.append(tenpy.random((T.shape[i],R)))
+            mat = tenpy.random((s, s))
+            [U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
+            A.append(U_mat[:, :R])
+            # A.append(tenpy.random((T.shape[i],R)))
 
     if args.decomposition == "CP":
         # TODO: it doesn't support sparse calculation with hosvd here
