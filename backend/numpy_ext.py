@@ -5,6 +5,9 @@ import scipy.linalg as sla
 def name():
     return 'numpy'
 
+def fill_diagonal(matrix, value):
+    return np.fill_diagonal(matrix, value)
+
 def diag(v):
     return np.diag(v)
 
