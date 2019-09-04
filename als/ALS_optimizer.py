@@ -357,7 +357,7 @@ class PPALS_base():
 
         num_smallupdate = 0
         for i in range(self.order):
-            if self.tenpy.sum(self.dA[i]**2)**.5 > self.tol_restart_dt:
+            if self.tenpy.sum(self.dA[i]**2)**.5 / self.tenpy.sum(self.A[i]**2)**.5 > self.tol_restart_dt:
                 num_smallupdate += 1
 
         if num_smallupdate > 0:
@@ -382,7 +382,7 @@ class PPALS_base():
         num_smallupdate = 0
         for i in range(self.order):
             self.dA[i] = self.A[i] - A_prev[i]
-            if self.tenpy.sum(self.dA[i]**2)**.5 < self.tol_restart_dt:
+            if self.tenpy.sum(self.dA[i]**2)**.5 / self.tenpy.sum(self.A[i]**2)**.5 < self.tol_restart_dt:
                 num_smallupdate += 1
 
         if num_smallupdate == self.order:
