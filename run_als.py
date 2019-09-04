@@ -24,7 +24,9 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
     from CPD.lowr_ALS import CP_DTLRALS_Optimizer
     from CPD.NLS import CP_fastNLS_Optimizer, CP_ALSNLS_Optimizer,CP_safeNLS_Optimizer
 
-    
+    # TODO: currently all the methods are messed up. Needs to refactor a lot.
+    flag_dt = True
+
     if csv_file is not None:
         csv_writer = csv.writer(
             csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -72,7 +74,7 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
     fitness_old = 0
     for i in range(num_iter):
 
-        if i % res_calc_freq == 0 or i==num_iter-1:
+        if i % res_calc_freq == 0 or i==num_iter-1 or not flag_dt:
             if sp_res:
                 res = get_residual_sp(tenpy,O,T,A)
             else:
@@ -84,14 +86,10 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
                 # write to csv file
                 if csv_file is not None:
                     if method == 'NLS':
-                        csv_writer.writerow([iters, time_all, res, fitness])
+                        csv_writer.writerow([iters, time_all, res, fitness, flag_dt])
                     else:
-                        csv_writer.writerow([i, time_all, res, fitness])
+                        csv_writer.writerow([i, time_all, res, fitness, flag_dt])
                     csv_file.flush()
-        '''if i != 0 and method == 'NLS':
-            if tenpy.vecnorm(optimizer.gradient()) < grad_tol:
-                print('Gradient norm less than tolerance in',i,'iterations')
-                break'''
             
         if res<nls_tol:
             print('Method converged in',i,'iterations')
@@ -106,6 +104,9 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
             
         elif method == 'SNLS':
             A = optimizer.step(Regu,res,fitness)
+        elif method == 'PP':
+            A, pp_restart = optimizer.step(Regu)
+            flag_dt = not pp_restart
         else:
             A = optimizer.step(Regu)
             
@@ -268,7 +269,7 @@ if __name__ == "__main__":
         # initialize the csv file
         if is_new_log:
             csv_writer.writerow([
-                'iterations', 'time', 'residual', 'fitness'
+                'iterations', 'time', 'residual', 'fitness', 'dt_step'
             ])
 
     tenpy.seed(args.seed)
@@ -338,10 +339,16 @@ if __name__ == "__main__":
             from Tucker.common_kernels import hosvd
             A = hosvd(tenpy, T, args.hosvd_core_dim, compute_core=False)
     else:
-        for i in range(T.ndim):
-            mat = tenpy.random((s, s))
-            [U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
-            A.append(U_mat[:, :R])
+        if args.decomposition == "CP":
+            for i in range(T.ndim):
+                mat = tenpy.random((s, s))
+                [U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
+                A.append(U_mat[:, :R])
+        else:
+            for i in range(T.ndim):
+                mat = tenpy.random((s, s))
+                [U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
+                A.append(U_mat[:, :args.hosvd_core_dim[i]])
             # A.append(tenpy.random((T.shape[i],R)))
 
     if args.decomposition == "CP":

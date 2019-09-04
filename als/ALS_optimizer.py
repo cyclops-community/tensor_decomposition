@@ -400,14 +400,16 @@ class PPALS_base():
             A (list): list of decomposed matrices
 
         """
+        restart = False
         if self.pp:
             if self.reinitialize_tree:
+                restart = True
                 self._initialize_tree()
                 self.reinitialize_tree = False
             A = self._step_pp_subroutine(Regu)
         else:
             A = self._step_dt_subroutine(Regu)
-        return A
+        return A, restart
 
 TREENODE = collections.namedtuple('TREENODE',['indices_A','tensor','contract_types'])
 
