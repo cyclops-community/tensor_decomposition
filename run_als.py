@@ -175,6 +175,9 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',a
     from Tucker.common_kernels import get_residual_sp, get_residual
     from Tucker.standard_ALS import Tucker_DTALS_Optimizer, Tucker_PPALS_Optimizer
 
+    # TODO: currently all the methods are messed up. Needs to refactor a lot.
+    flag_dt = True
+
     if csv_file is not None:
         csv_writer = csv.writer(
             csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -189,7 +192,7 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',a
     normT = tenpy.vecnorm(T)
 
     for i in range(num_iter):
-        if i % res_calc_freq == 0 or i==num_iter-1:
+        if i % res_calc_freq == 0 or i==num_iter-1 or not flag_dt:
             if sp_res:
                 # TODO: implement the get residual sparse version
                 res = get_residual_sp(tenpy,O,T,optimizer.A)
@@ -201,10 +204,14 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',a
                 print("[",i,"] Residual is", res, "fitness is: ", fitness)
                 # write to csv file
                 if csv_file is not None:
-                    csv_writer.writerow([i, time_all, res, fitness])
+                    csv_writer.writerow([i, time_all, res, fitness, flag_dt])
                     csv_file.flush()
         t0 = time.time()
-        A = optimizer.step(Regu)
+        if method == 'PP':
+            A, pp_restart = optimizer.step(Regu)
+            flag_dt = not pp_restart
+        else:
+            A = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("Sweep took", t1-t0,"seconds")
         time_all += t1-t0
