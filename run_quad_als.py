@@ -135,14 +135,16 @@ class quad_pp_optimizer(quad_als_optimizer):
         return self.A, self.B
 
     def step(self):
+        restart = False
         if self.pp:
             if self.reinitialize_tree:
+                restart = True
                 self._initialize_tree()
                 self.reinitialize_tree = False
             A, B = self._step_pp_subroutine()
         else:
             A, B = self._step_dt_subroutine()
-        return A, B
+        return A, B, restart
 
 
 if __name__ == "__main__":
@@ -188,6 +190,9 @@ if __name__ == "__main__":
 
     import backend.numpy_ext as tenpy
 
+    # TODO: currently all the methods are messed up. Needs to refactor a lot.
+    flag_dt = True
+
     R = args.R
     res_calc_freq = 10
 
@@ -204,7 +209,7 @@ if __name__ == "__main__":
         # initialize the csv file
         if is_new_log:
             csv_writer.writerow([
-                'iterations', 'time', 'residual', 'fitness'
+                'iterations', 'time', 'residual', 'fitness', ''
             ])
 
     tenpy.seed(args.seed)
@@ -225,16 +230,20 @@ if __name__ == "__main__":
     time_all = 0.
 
     for i in range(2000):
-        if i % res_calc_freq == 0 or i == 2000 - 1:
+        if i % res_calc_freq == 0 or i == 2000 - 1 or not flag_dt:
             res = get_residual(tenpy, T, [X, Y, Y])
             fitness = 1 - res / normT
             if tenpy.is_master_proc():
                 print("[", i, "] Residual is", res, "fitness is: ", fitness)
                 if csv_file is not None:
-                    csv_writer.writerow([i, time_all, res, fitness])
+                    csv_writer.writerow([i, time_all, res, fitness, flag_dt])
                     csv_file.flush()
         t0 = time.time()
-        X, Y = optimizer.step()
+        if args.method == 'PP':
+            X, Y, pp_restart = optimizer.step()
+            flag_dt = not pp_restart
+        else:
+            X, Y = optimizer.step()
         t1 = time.time()
         tenpy.printf("[", i, "] Sweep took", t1 - t0, "seconds")
         time_all += t1 - t0

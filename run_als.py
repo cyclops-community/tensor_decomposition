@@ -348,14 +348,16 @@ if __name__ == "__main__":
     else:
         if args.decomposition == "CP":
             for i in range(T.ndim):
-                mat = tenpy.random((s, s))
-                [U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
-                A.append(U_mat[:, :R])
+                #mat = tenpy.random((s, s))
+                #[U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
+                #A.append(U_mat[:, :R])
+                A.append(tenpy.random((T.shape[i], R)))
         else:
             for i in range(T.ndim):
-                mat = tenpy.random((s, s))
-                [U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
-                A.append(U_mat[:, :args.hosvd_core_dim[i]])
+                #mat = tenpy.random((s, s))
+                #[U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
+                #A.append(U_mat[:, :args.hosvd_core_dim[i]])
+                A.append(tenpy.random((T.shape[i], args,hosvd_core_dim[i])))
             # A.append(tenpy.random((T.shape[i],R)))
 
     if args.decomposition == "CP":
