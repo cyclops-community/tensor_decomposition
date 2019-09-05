@@ -17,7 +17,7 @@ from utils import save_decomposition_results
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',hosvd=0,args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-12, grad_tol = 1e-05,num=1,switch_tol=0.1,own_cg=False,nls_iter = 2, als_iter = 30, maxiter =0):
+def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-12, grad_tol = 1e-05,num=1,switch_tol=0.1,own_cg=False,nls_iter = 2, als_iter = 30, maxiter =0):
 
     from CPD.common_kernels import get_residual_sp, get_residual
     from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
@@ -30,16 +30,6 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
     if csv_file is not None:
         csv_writer = csv.writer(
             csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-
-    T, transformer = None, None
-    if args is not None:
-        if args.hosvd != 0:
-            from Tucker.common_kernels import hosvd
-            transformer, T = hosvd(tenpy, input_tensor, args.hosvd_core_dim, compute_core=True)
-        else:
-            T = input_tensor
-    else:
-        T = input_tensor
 
     if Regu is None:
         Regu = 0
@@ -146,21 +136,6 @@ def CP_ALS(tenpy,A,input_tensor,O,num_iter,sp_res,csv_file=None,Regu=None,method
             #if Regu < 1e-03:
             #    print("CHANGED REGU")
             #    Regu= orig_Regu
-        
-            
-        
-
-    if hosvd != 0:
-        A_fullsize = []
-        norm_input = tenpy.vecnorm(input_tensor)
-        for i in range(T.ndim):
-            A_fullsize.append(tenpy.dot(transformer[i],A[i]))
-        if sp_res:
-            res = get_residual_sp(tenpy,O,input_tensor,A_fullsize)
-        else:
-            res = get_residual(tenpy,input_tensor,A_fullsize)
-        fitness = 1-res/norm_input
-        tenpy.printf(method, "with hosvd, residual is", res, "fitness is: ", fitness)
 
     tenpy.printf(method+" method took",time_all,"seconds overall")
 
@@ -221,7 +196,7 @@ def Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',a
         folderpath = join(results_dir, arg_defs.get_file_prefix(args))
         save_decomposition_results(T,A,tenpy,folderpath)
 
-    return res
+    return A, res
 
 if __name__ == "__main__":
 
@@ -348,21 +323,24 @@ if __name__ == "__main__":
     else:
         if args.decomposition == "CP":
             for i in range(T.ndim):
-                #mat = tenpy.random((s, s))
-                #[U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
-                #A.append(U_mat[:, :R])
                 A.append(tenpy.random((T.shape[i], R)))
         else:
             for i in range(T.ndim):
-                #mat = tenpy.random((s, s))
-                #[U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
-                #A.append(U_mat[:, :args.hosvd_core_dim[i]])
                 A.append(tenpy.random((T.shape[i], args,hosvd_core_dim[i])))
-            # A.append(tenpy.random((T.shape[i],R)))
 
     if args.decomposition == "CP":
-        # TODO: it doesn't support sparse calculation with hosvd here
-        CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method,args.hosvd,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg,nls_iter, als_iter,maxiter)
+        if args.hosvd:
+            from Tucker.common_kernels import hosvd
+            transformer, compressed_T = hosvd(tenpy, T, args.hosvd_core_dim, compute_core=True)
+            # TODO: it doesn't support sparse calculation with hosvd here
+            CP_ALS(tenpy,A,compressed_T,O,100,sp_res,csv_file,Regu,'DT',args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg,nls_iter, als_iter,maxiter)
+            A_fullsize = []
+            for i in range(T.ndim):
+                A_fullsize.append(tenpy.dot(transformer[i],A[i]))
+            CP_ALS(tenpy,A_fullsize,T,O,num_iter,sp_res,csv_file,Regu,args.method ,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg,nls_iter, als_iter,maxiter)   
+        else:
+            # TODO: it doesn't support sparse calculation with hosvd here
+            CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method ,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,own_cg,nls_iter, als_iter,maxiter)
     elif args.decomposition == "Tucker":
         Tucker_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method,args,args.res_calc_freq)
     if tlib == "ctf":
