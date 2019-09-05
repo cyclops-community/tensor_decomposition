@@ -105,9 +105,12 @@ class quad_pp_optimizer(quad_als_optimizer):
             self.B = B_new
 
         smallupdates = True
-        if self.tenpy.sum(
-                self.dA**2)**.5 > self.tol_restart_dt or self.tenpy.sum(
-                self.dB**2)**.5 > self.tol_restart_dt:
+        norm_dA = self.tenpy.sum(self.dA**2)**.5
+        norm_dB = self.tenpy.sum(self.dB**2)**.5
+        norm_A = self.tenpy.sum(self.A**2)**.5
+        norm_B = self.tenpy.sum(self.B**2)**.5
+        if norm_dA > self.tol_restart_dt * norm_A or self.tenpy.sum(
+                self.dB**2)**.5 > self.tol_restart_dt * norm_B:
             smallupdates = False
 
         if smallupdates is False:
@@ -125,8 +128,10 @@ class quad_pp_optimizer(quad_als_optimizer):
         self.dB = self.B - B_prev
         norm_dA = self.tenpy.sum(self.dA**2)**.5
         norm_dB = self.tenpy.sum(self.dB**2)**.5
+        norm_A = self.tenpy.sum(self.A**2)**.5
+        norm_B = self.tenpy.sum(self.B**2)**.5
         # print(norm_dA, norm_dB)
-        if norm_dA >= self.tol_restart_dt or norm_dB >= self.tol_restart_dt:
+        if norm_dA >= self.tol_restart_dt * norm_A or norm_dB >= self.tol_restart_dt * norm_B:
             smallupdates = False
 
         if smallupdates is True:
