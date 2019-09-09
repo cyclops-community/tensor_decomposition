@@ -157,6 +157,7 @@ def init_collinearity_tensor(tenpy, s, order, R,
         A_iT = tenpy.cholesky(Gamma)
         # change size from [R,R] to [s,R]
         mat = tenpy.random((s, s))
+        [U_mat, sigma_mat, VT_mat] = tenpy.svd(mat)
         A_iT = tenpy.dot(A_iT, VT_mat[:R, :])
 
         A.append(tenpy.transpose(A_iT))
