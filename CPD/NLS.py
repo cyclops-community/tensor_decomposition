@@ -1,7 +1,6 @@
-from CPD.common_kernels import compute_number_of_variables, flatten_Tensor, reshape_into_matrices, solve_sys, get_residual
+from CPD.common_kernels import compute_number_of_variables, compute_lin_sys, flatten_Tensor, reshape_into_matrices, solve_sys, get_residual
 from scipy.sparse.linalg import LinearOperator
 from CPD.standard_ALS import CP_DTALS_Optimizer
- 
 
 import scipy.sparse.linalg as spsalg
 import numpy as np
@@ -199,7 +198,7 @@ class CP_fastNLS_Optimizer():
         if self.tenpy.list_vecnorm(r)<tol:
             return x
         p = r
-        counter = 1
+        counter = 0
 
         while True:
             mv = self.matvec(Regu,p)
@@ -211,6 +210,7 @@ class CP_fastNLS_Optimizer():
             r_new = self.tenpy.list_add(r, self.tenpy.scalar_mul(-1,self.tenpy.scalar_mul(alpha,mv)))
 
             if self.tenpy.list_vecnorm(r_new)<tol:
+                counter+=1
                 break
             beta = self.tenpy.list_vecnormsq(r_new)/self.tenpy.list_vecnormsq(r)
 
@@ -224,6 +224,8 @@ class CP_fastNLS_Optimizer():
         return x,counter
 
     def fast_precond_conjugate_gradient(self,g,P,Regu):
+        start = time.time()
+        
         x = [self.tenpy.zeros(A.shape) for A in g]
 
         tol = np.max([self.atol,self.cg_tol*self.tenpy.list_vecnorm(g)])
@@ -237,7 +239,7 @@ class CP_fastNLS_Optimizer():
 
         p = z
 
-        counter = 1
+        counter = 0
         while True:
             mv = self.matvec(Regu,p)
 
@@ -250,6 +252,8 @@ class CP_fastNLS_Optimizer():
             r_new = self.tenpy.list_add(r, self.tenpy.scalar_mul(-1,self.tenpy.scalar_mul(alpha,mv)))
 
             if self.tenpy.list_vecnorm(r_new)<tol:
+                counter+=1
+                end = time.time()
                 break
 
             z_new = fast_block_diag_precondition(self.tenpy,r_new,P)
@@ -266,7 +270,10 @@ class CP_fastNLS_Optimizer():
             counter += 1
             
             if counter == self.maxiter:
+                end = time.time()
                 break
+                
+        self.tenpy.printf("cg took:",end-start)
 
         return x,counter
 
@@ -338,11 +345,39 @@ class CP_fastNLS_Optimizer():
         
         return [self.A,self.total_iters]
 
-class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
+class cp_dtals_res_optimizer():
+
+    def __init__(self, tenpy, T, A):
+        self.tenpy = tenpy
+        self.T = T
+        self.A = A
+
+    def step(self, Regu):
+        # 1st mode
+        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0], self.A[1], self.A[2])
+        TC = self.tenpy.einsum("ijk,ka->ija", res_T, self.A[2])
+        rhs = self.tenpy.einsum("ija,ja->ia", TC, self.A[1])
+        self.A[0] += solve_sys(self.tenpy, compute_lin_sys(self.tenpy,
+                                                      self.A[1], self.A[2], Regu), rhs)
+        # 2nd mode
+        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0], self.A[1], self.A[2])
+        TC = self.tenpy.einsum("ijk,ka->ija", res_T, self.A[2])
+        rhs = self.tenpy.einsum("ija,ia->ja", TC, self.A[0])
+        self.A[1] += solve_sys(self.tenpy, compute_lin_sys(self.tenpy,
+                                                      self.A[0], self.A[2], Regu), rhs)
+        # 3rd mode
+        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0], self.A[1], self.A[2])
+        rhs = self.tenpy.einsum("ijk,ia,ja->ka", res_T, self.A[0], self.A[1])
+        self.A[2] += solve_sys(self.tenpy, compute_lin_sys(self.tenpy,
+                                                      self.A[0], self.A[1], Regu), rhs)
+        return self.A
+        
+        
+class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,cp_dtals_res_optimizer):
 
     def __init__(self,tenpy,T,A,cg_tol=1e-04,num=0,switch_tol= 0.1, args=None):
         CP_fastNLS_Optimizer.__init__(self,tenpy,T,A,cg_tol,num,args)
-        CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
+        cp_dtals_res_optimizer.__init__(self,tenpy,T,A)
         self.tenpy = tenpy
         self.switch_tol = switch_tol
         self.switch = False
@@ -351,7 +386,7 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
         self.count_tol = 50
 
     def _step_dt(self,Regu):
-        return CP_DTALS_Optimizer.step(self,Regu)
+        return cp_dtals_res_optimizer.step(self,Regu)
 
         
     def _step_nls(self,Regu):
@@ -392,12 +427,13 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
 
         return self.A
         
+
         
-class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
+class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,cp_dtals_res_optimizer):
 
     def __init__(self,tenpy,T,A, maxiter, cg_tol=1e-04,num=0,als_iter= 10, nls_iter = 2, args=None):
         CP_fastNLS_Optimizer.__init__(self,tenpy,T,A,maxiter,cg_tol,num,args)
-        CP_DTALS_Optimizer.__init__(self,tenpy,T,A)
+        cp_dtals_res_optimizer.__init__(self,tenpy,T,A)
         self.tenpy = tenpy
         self.switch = True
         self.A = A
@@ -412,7 +448,7 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,CP_DTALS_Optimizer):
         
 
     def _step_dt(self,Regu):
-        return CP_DTALS_Optimizer.step(self,0)
+        return cp_dtals_res_optimizer.step(self,Regu)
 
 
 

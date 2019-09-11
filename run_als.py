@@ -110,21 +110,22 @@ def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',args=
         fitness_old = fitness
         
         
-        if method == "NLS" :
-            if res < 1:
-                flag = True
+        if method == "NLS" or method == "SNLS" or method == "NLSALS" :
+            #if res < 1:
+            #    flag = True
             
+            #if flag:
+            #    Regu = 1e-05
+                
+            #else:
+            if Regu < 1e-05:
+                increase=True
+                decrease=False
             
-                
-            else:
-                if Regu < 1e-05:
-                    increase=True
-                    decrease=False
-                
-                if Regu > 1e-01:
-                    decrease= True
-                    increase=False
-                        
+            if Regu > 1e-01:
+                decrease= True
+                increase=False
+                    
                 
                 
             if increase:

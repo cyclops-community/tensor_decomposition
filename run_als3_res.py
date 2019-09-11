@@ -12,7 +12,6 @@ from CPD.common_kernels import solve_sys, compute_lin_sys
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-
 class cp_dtals_res_optimizer():
 
     def __init__(self, tenpy, T, A):
@@ -22,21 +21,21 @@ class cp_dtals_res_optimizer():
 
     def step(self, Regu):
         # 1st mode
-        res_T = T - tenpy.einsum("ia,ja,ka->ijk", A[0], A[1], A[2])
-        TC = tenpy.einsum("ijk,ka->ija", res_T, self.A[2])
-        rhs = tenpy.einsum("ija,ja->ia", TC, self.A[1])
-        self.A[0] += solve_sys(tenpy, compute_lin_sys(tenpy,
+        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0], self.A[1], self.A[2])
+        TC = self.tenpy.einsum("ijk,ka->ija", res_T, self.A[2])
+        rhs = self.tenpy.einsum("ija,ja->ia", TC, self.A[1])
+        self.A[0] += solve_sys(self.tenpy, compute_lin_sys(self.tenpy,
                                                       self.A[1], self.A[2], Regu), rhs)
         # 2nd mode
-        res_T = T - tenpy.einsum("ia,ja,ka->ijk", A[0], A[1], A[2])
-        TC = tenpy.einsum("ijk,ka->ija", res_T, self.A[2])
-        rhs = tenpy.einsum("ija,ia->ja", TC, self.A[0])
-        self.A[1] += solve_sys(tenpy, compute_lin_sys(tenpy,
+        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0], self.A[1], self.A[2])
+        TC = self.tenpy.einsum("ijk,ka->ija", res_T, self.A[2])
+        rhs = self.tenpy.einsum("ija,ia->ja", TC, self.A[0])
+        self.A[1] += solve_sys(self.tenpy, compute_lin_sys(self.tenpy,
                                                       self.A[0], self.A[2], Regu), rhs)
         # 3rd mode
-        res_T = T - tenpy.einsum("ia,ja,ka->ijk", A[0], A[1], A[2])
-        rhs = tenpy.einsum("ijk,ia,ja->ka", res_T, self.A[0], self.A[1])
-        self.A[2] += solve_sys(tenpy, compute_lin_sys(tenpy,
+        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0], self.A[1], self.A[2])
+        rhs = self.tenpy.einsum("ijk,ia,ja->ka", res_T, self.A[0], self.A[1])
+        self.A[2] += solve_sys(self.tenpy, compute_lin_sys(self.tenpy,
                                                       self.A[0], self.A[1], Regu), rhs)
         return self.A
 
@@ -63,7 +62,8 @@ def CP_ALS_res(
 
     if Regu is None:
         Regu = 0
-
+    
+    
     normT = tenpy.vecnorm(T)
 
     optimizer_list = {
@@ -73,6 +73,11 @@ def CP_ALS_res(
     optimizer = optimizer_list[method]
 
     time_all = 0.
+    
+    decrease= True
+    increase=False
+    
+    flag = False
 
     for i in range(num_iter):
 
@@ -95,6 +100,30 @@ def CP_ALS_res(
         print("Regu is:", Regu)
 
         A = optimizer.step(Regu)
+        
+        
+        #if res < 1:
+        #    flag = True
+            
+        #if flag:
+        #    Regu = 1e-05
+            
+        #else:
+        if Regu < 1e-05:
+            increase=True
+            decrease=False
+        
+        if Regu > 1e-01:
+            decrease= True
+            increase=False
+                
+        
+            
+        if increase:
+            Regu = Regu*2
+            
+        elif decrease:
+            Regu = Regu/2
 
         t1 = time.time()
         tenpy.printf("[", i, "] Sweep took", t1 - t0, "seconds")
