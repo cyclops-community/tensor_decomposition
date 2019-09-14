@@ -75,7 +75,6 @@ def CP_ALS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='DT',args=
             break
         t0 = time.time()
         # Regu = 1/(i+1)
-        print("Regu is:",Regu)
         
         A = optimizer.step(Regu)
             
