@@ -30,7 +30,9 @@ def fast_hessian_contract(tenpy,X,A,gamma,regu=1):
                 #tenpy.printf("compute ret took ",time2-time1,"seconds.")
                 #Y = tenpy.einsum("iz,zr,jr,jz->ir",A[n],M,A[p],X[p])
 
-        ret[n] += regu*X[n]
+        #tenpy.printf(gamma[n][n].shape)
+        ret[n] += regu*tenpy.einsum('jj,ij->ij',gamma[n][n],X[n])
+        #ret[n]+= regu*X[n]
 
     return ret
 
@@ -63,6 +65,7 @@ class CP_fastNLS_Optimizer():
         self.atol = 0
         self.total_iters = 0
         self.maxiter = maxiter
+        self.nls_iter = 0
 
 
     def _einstr_builder(self,M,s,ii):
@@ -109,7 +112,8 @@ class CP_fastNLS_Optimizer():
         P = []
         for i in range(len(self.A)):
             n = self.gamma[i][i].shape[0]
-            P.append(self.tenpy.cholesky(self.gamma[i][i]+Regu*self.tenpy.eye(n)))
+            #P.append(self.tenpy.cholesky(self.gamma[i][i]+Regu*self.tenpy.eye(n)))
+            P.append(self.tenpy.cholesky(self.gamma[i][i]+Regu* np.diag(self.gamma[i][i].diagonal())))
         return P
 
 
@@ -187,6 +191,7 @@ class CP_fastNLS_Optimizer():
         return result
 
     def fast_conjugate_gradient(self,g,Regu):
+        start = time.time()
 
         x = [self.tenpy.zeros(A.shape) for A in g]
 
@@ -211,6 +216,7 @@ class CP_fastNLS_Optimizer():
 
             if self.tenpy.list_vecnorm(r_new)<tol:
                 counter+=1
+                end = time.time()
                 break
             beta = self.tenpy.list_vecnormsq(r_new)/self.tenpy.list_vecnormsq(r)
 
@@ -219,7 +225,10 @@ class CP_fastNLS_Optimizer():
             counter += 1
 
             if counter == self.maxiter:
+                end = time.time()
                 break
+                
+        self.tenpy.printf('cg took',end-start)
 
         return x,counter
 
@@ -269,10 +278,11 @@ class CP_fastNLS_Optimizer():
             z = z_new
             counter += 1
             
-            if counter == self.maxiter:
-                end = time.time()
-                break
+            #if counter == self.maxiter:
+                #end = time.time()
+                #break
                 
+        end = time.time()
         self.tenpy.printf("cg took:",end-start)
 
         return x,counter
@@ -300,7 +310,7 @@ class CP_fastNLS_Optimizer():
 
 
 
-    def step2(self,Regu):
+    def step(self,Regu):
         self.compute_G()
         self.compute_gamma()
         g= self.gradient()
@@ -312,17 +322,20 @@ class CP_fastNLS_Optimizer():
         [delta,counter] = self.fast_precond_conjugate_gradient(g,P,Regu)
         
         self.total_iters+= counter
+        
+            
         self.atol = self.num*self.tenpy.list_vecnorm(delta)
         self.tenpy.printf('cg iterations:',counter)
         self.update_A(delta)
         
         self.tenpy.printf("total cg iterations",self.total_iters)
+        self.nls_iter+=1
         
         return [self.A,self.total_iters]
 
 
 
-    def step(self,Regu):
+    def step2(self,Regu):
         
         def cg_call(v):
             self.total_iters+=1
@@ -391,7 +404,7 @@ class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer,cp_dtals_res_optimizer):
         
     def _step_nls(self,Regu):
         
-        return CP_fastNLS_Optimizer.step2(self,Regu)
+        return CP_fastNLS_Optimizer.step(self,Regu)
 
 
 
@@ -459,7 +472,7 @@ class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer,cp_dtals_res_optimizer):
             
     def _step_nls(self,Regu):
         
-        return CP_fastNLS_Optimizer.step2(self,Regu)
+        return CP_fastNLS_Optimizer.step(self,Regu)
         
      
      

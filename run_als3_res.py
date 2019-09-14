@@ -202,6 +202,7 @@ if __name__ == "__main__":
             'random',
             'random_col',
             'scf',
+            'negrandom'
         ],
         help='choose tensor to test, available: random, random_col, scf (default: random)')
     parser.add_argument(
@@ -217,7 +218,7 @@ if __name__ == "__main__":
 
     s = args.s
     R = args.R
-    res_calc_freq = 10
+    res_calc_freq = 1
 
     csv_path = join(results_dir, get_file_prefix(args) + '.csv')
     is_new_log = not Path(csv_path).exists()
@@ -246,6 +247,10 @@ if __name__ == "__main__":
     elif args.tensor == "scf":
         T = real_tensors.get_scf_tensor(tenpy)
         O = None
+        
+    elif args.tensor == "negrandom":
+        tenpy.printf("Testing random tensor with negative entries")
+        [T,O] = synthetic_tensors.init_neg_rand(tenpy,3,s,R,1,args.seed)
 
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
