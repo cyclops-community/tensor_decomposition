@@ -1,13 +1,37 @@
 ## Python Tensor Decomposition Algorithms
 
+This repository implements efficient numerical algorithm for Alternating Least Squares (ALS) in CP and Tucker decompositions, as well as fast Nonlinear Least Squares (NLS) for CP decomposition.
 
-### Note:
+This repository implements everything in Python, and is compatible with both Numpy backend, which allows fast seaquential running, and [Cyclops Tensor Framework](https://github.com/cyclops-community/ctf) backend, which allows fast distributed parallism.
+
+### TODOs
+
+- [ ] tests
+
+- [ ] Comments in get_scf_tensor function
+
+- [ ] remove redundent code in run_nls.py, convprob.py, contraction.py
+
+- [ ] add comments / necessary documentation for nls optimizers CPD/NLS.py
+
+- [ ] ReadMe and examples
+
+### Prerequisite
 
 Run
 ```
 pip install -r requirements.txt
 ```
 to install necessary packages. 
+
+### Tests cases
+Run all tests with
+```bash
+# sudo pip install nose
+nosetests -v tests/*.py
+```
+
+### Running CP/Tucker decomposition with ALS
 
 Run 
 
@@ -23,10 +47,21 @@ python tests.py
 ```
 to test some simple CP runs.
 
+### Running CP decomposition with NLS
 
-Run 
 
+### ALS/NLS performance comparision
+
+### Convergence probability
+
+
+## Visualization with Visdom
+
+For now visdom can fetch all the csv files following the particular format and plot them.
+
+Go to the Visdom folder then execute the following commands:
 ```
-python test_ALS3.py --s 64 --R 10 --r 10 --num-iter 10 --num-lowr-init-iter 2 --sp-fraction 1 --sp-updatelowrank 1 --sp-res 1 --run-naive 1 --run-lowrank 0 --num-slices 1
+visdom -port XXXXX
+
+python visdom_pull_server.py -port XXXXX
 ```
-to execute a test case. 
