@@ -11,24 +11,21 @@ import random
 
 # TODO: Also extend to check models. Probably by path?
 parser = argparse.ArgumentParser(description='Visdom server Arguments')
-parser.add_argument(
-    '--port',
-    metavar='p',
-    type=int,
-    required=True,
-    help='Port the visdom server is running on')
-parser.add_argument(
-    '--root',
-    metavar='r',
-    type=str,
-    default='../results/',
-    help='Where to look for CSV files')
-parser.add_argument(
-    '--interval',
-    metavar='s',
-    type=int,
-    default=10,
-    help='Number of seconds to wait before refreshing data')
+parser.add_argument('--port',
+                    metavar='p',
+                    type=int,
+                    required=True,
+                    help='Port the visdom server is running on')
+parser.add_argument('--root',
+                    metavar='r',
+                    type=str,
+                    default='../results/',
+                    help='Where to look for CSV files')
+parser.add_argument('--interval',
+                    metavar='s',
+                    type=int,
+                    default=10,
+                    help='Number of seconds to wait before refreshing data')
 
 FLAGS = parser.parse_args()
 
@@ -79,24 +76,26 @@ def generate_trace_from_csv(filename):
     model_prefix = (os.path.splitext(basename)[0])
 
     color = color_picker(abs(hash(model_prefix)))
-    residual_iter_trace = dict(
-        x=df['iterations'].tolist(),
-        y=df['residual'].tolist(),
-        mode="markers+lines",
-        type='custom',
-        marker={'color': color,
-                'symbol': 104,
-                'size': "1"},
-        name=model_prefix)
-    residual_time_trace = dict(
-        x=df['time'].tolist(),
-        y=df['residual'].tolist(),
-        mode="markers+lines",
-        type='custom',
-        marker={'color': color,
-                'symbol': 104,
-                'size': "1"},
-        name=model_prefix)
+    residual_iter_trace = dict(x=df['iterations'].tolist(),
+                               y=df['residual'].tolist(),
+                               mode="markers+lines",
+                               type='custom',
+                               marker={
+                                   'color': color,
+                                   'symbol': 104,
+                                   'size': "1"
+                               },
+                               name=model_prefix)
+    residual_time_trace = dict(x=df['time'].tolist(),
+                               y=df['residual'].tolist(),
+                               mode="markers+lines",
+                               type='custom',
+                               marker={
+                                   'color': color,
+                                   'symbol': 104,
+                                   'size': "1"
+                               },
+                               name=model_prefix)
     return {
         'residual_iter_trace': residual_iter_trace,
         'residual_time_trace': residual_time_trace
@@ -106,20 +105,18 @@ def generate_trace_from_csv(filename):
 while True:
 
     all_traces = fetch_all_traces()
-    residual_iter_layout = dict(
-        title="residual vs iterations",
-        xaxis={'title': 'iterations'},
-        yaxis={
-            'type': 'log',
-            'title': 'residual'
-        })
-    residual_time_layout = dict(
-        title="residual vs time",
-        xaxis={'title': 'time'},
-        yaxis={
-            'type': 'log',
-            'title': 'residual'
-        })
+    residual_iter_layout = dict(title="residual vs iterations",
+                                xaxis={'title': 'iterations'},
+                                yaxis={
+                                    'type': 'log',
+                                    'title': 'residual'
+                                })
+    residual_time_layout = dict(title="residual vs time",
+                                xaxis={'title': 'time'},
+                                yaxis={
+                                    'type': 'log',
+                                    'title': 'residual'
+                                })
 
     vis._send({
         'data': all_traces['residual_iter_trace'],

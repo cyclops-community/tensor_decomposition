@@ -13,15 +13,15 @@ results_dir = join(parent_dir, 'results')
 
 
 def get_file_prefix(args):
-    return "-".join(filter(None, [
-        args.experiment_prefix,
-        'R' + str(args.R),
-        args.method,
-    ]))
+    return "-".join(
+        filter(None, [
+            args.experiment_prefix,
+            'R' + str(args.R),
+            args.method,
+        ]))
 
 
 class quad_als_optimizer():
-
     def __init__(self, tenpy, T, A, B):
         self.tenpy = tenpy
         self.T = T
@@ -52,7 +52,6 @@ class quad_als_optimizer():
 
 
 class quad_pp_optimizer(quad_als_optimizer):
-
     def __init__(self, tenpy, T, A, B, args):
 
         quad_als_optimizer.__init__(self, tenpy, T, A, B)
@@ -155,20 +154,18 @@ class quad_pp_optimizer(quad_als_optimizer):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--experiment-prefix',
-        '-ep',
-        type=str,
-        default='',
-        required=False,
-        metavar='str',
-        help='Output csv file name prefix (default: None)')
-    parser.add_argument(
-        '--R',
-        type=int,
-        default=1000,
-        metavar='int',
-        help='Input CP decomposition rank (default: 10)')
+    parser.add_argument('--experiment-prefix',
+                        '-ep',
+                        type=str,
+                        default='',
+                        required=False,
+                        metavar='str',
+                        help='Output csv file name prefix (default: None)')
+    parser.add_argument('--R',
+                        type=int,
+                        default=1000,
+                        metavar='int',
+                        help='Input CP decomposition rank (default: 10)')
     parser.add_argument(
         '--method',
         default="DT",
@@ -178,18 +175,19 @@ if __name__ == "__main__":
             'PP',
         ],
         help='choose the optimization method: DT, PP (default: DT)')
-    parser.add_argument(
-        '--seed',
-        type=int,
-        default=1,
-        metavar='int',
-        help='random seed')
+    parser.add_argument('--seed',
+                        type=int,
+                        default=1,
+                        metavar='int',
+                        help='random seed')
     parser.add_argument(
         '--tol-restart-dt',
         default=1.,
         type=float,
         metavar='float',
-        help='used in pairwise perturbation optimizer, tolerance for dimention tree restart')
+        help=
+        'used in pairwise perturbation optimizer, tolerance for dimention tree restart'
+    )
 
     args, _ = parser.parse_known_args()
 
@@ -204,8 +202,10 @@ if __name__ == "__main__":
     csv_path = join(results_dir, get_file_prefix(args) + '.csv')
     is_new_log = not Path(csv_path).exists()
     csv_file = open(csv_path, 'a')  # , newline='')
-    csv_writer = csv.writer(
-        csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    csv_writer = csv.writer(csv_file,
+                            delimiter=',',
+                            quotechar='|',
+                            quoting=csv.QUOTE_MINIMAL)
 
     if tenpy.is_master_proc():
         # print the arguments
@@ -213,9 +213,8 @@ if __name__ == "__main__":
             print(arg + ':', getattr(args, arg))
         # initialize the csv file
         if is_new_log:
-            csv_writer.writerow([
-                'iterations', 'time', 'residual', 'fitness', ''
-            ])
+            csv_writer.writerow(
+                ['iterations', 'time', 'residual', 'fitness', ''])
 
     tenpy.seed(args.seed)
 
