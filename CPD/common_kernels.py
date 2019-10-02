@@ -120,19 +120,3 @@ def get_residual(tenpy, T, A):
     t1 = time.time()
     tenpy.printf("Residual computation took", t1 - t0, "seconds")
     return nrm
-
-
-def get_residual_sp(tenpy, O, T, A):
-    t0 = time.time()
-    K = tenpy.TTTP(O, A)
-    nrm1 = tenpy.vecnorm(K)**2
-    B = tenpy.dot(tenpy.transpose(A[0]), A[0])
-    for i in range(1, len(A)):
-        B *= tenpy.dot(tenpy.transpose(A[i]), A[i])
-    nrm2 = tenpy.sum(B)
-    diff = T - K
-    nrm3 = tenpy.vecnorm(diff)**2
-    nrm = (nrm3 + nrm2 - nrm1)**.5
-    t1 = time.time()
-    tenpy.printf("Sparse residual computation took", t1 - t0, "seconds")
-    return nrm

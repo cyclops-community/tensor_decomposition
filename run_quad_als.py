@@ -35,8 +35,6 @@ class quad_als_optimizer():
         BB = self.tenpy.einsum("ja,jb->ab", self.B, self.B)
         S = BB * BB
         self.A = la.solve(S, M).T
-        # R = T - self.tenpy.einsum("ia,ja,ka->ijk", X, B, B)
-        # print("Residual norm after X update is", la.norm(R))
         M = self.tenpy.einsum("ijk,ia->ajk", T, self.A)
         N = self.tenpy.einsum("ia,ib->ab", self.A, self.A)
         max_approx = 5
@@ -45,8 +43,6 @@ class quad_als_optimizer():
             S = N * self.tenpy.einsum("ia,ib->ab", self.B, self.B)
             MM = self.tenpy.einsum("ajk,ka->aj", M, self.B)
             self.B = lam * self.B + (1 - lam) * la.solve(S, MM).T
-            # R = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A, self.B, self.B)
-            # print("Residual norm after", max_approx, "approx step is", la.norm(R))
 
         return self.A, self.B
 
@@ -98,7 +94,6 @@ class quad_pp_optimizer(quad_als_optimizer):
             M = self.T_A0_B0 + \
                 self.tenpy.einsum("ajk,ka->aj", self.T_A0, self.dB)
             M = M + self.tenpy.einsum("ija,ia->aj", self.T_B0, self.dA)
-            # M = M + self.tenpy.einsum("ijk,ia,ka->aj", self.T, self.dA, self.dB)
             B_new = lam * self.B + (1 - lam) * la.solve(S, M).T
             self.dB = self.dB + B_new - self.B
             self.B = B_new
@@ -129,7 +124,6 @@ class quad_pp_optimizer(quad_als_optimizer):
         norm_dB = self.tenpy.sum(self.dB**2)**.5
         norm_A = self.tenpy.sum(self.A**2)**.5
         norm_B = self.tenpy.sum(self.B**2)**.5
-        # print(norm_dA, norm_dB)
         if norm_dA >= self.tol_restart_dt * norm_A or norm_dB >= self.tol_restart_dt * norm_B:
             smallupdates = False
 
@@ -193,7 +187,6 @@ if __name__ == "__main__":
 
     import backend.numpy_ext as tenpy
 
-    # TODO: currently all the methods are messed up. Needs to refactor a lot.
     flag_dt = True
 
     R = args.R
@@ -201,7 +194,7 @@ if __name__ == "__main__":
 
     csv_path = join(results_dir, get_file_prefix(args) + '.csv')
     is_new_log = not Path(csv_path).exists()
-    csv_file = open(csv_path, 'a')  # , newline='')
+    csv_file = open(csv_path, 'a')
     csv_writer = csv.writer(csv_file,
                             delimiter=',',
                             quotechar='|',

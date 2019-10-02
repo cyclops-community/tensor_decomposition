@@ -23,7 +23,6 @@ def CP_NLS(tenpy,
            T,
            O,
            num_iter,
-           sp_res,
            csv_file=None,
            Regu=None,
            method='NLS',
@@ -38,7 +37,7 @@ def CP_NLS(tenpy,
            als_iter=30,
            maxiter=0):
 
-    from CPD.common_kernels import get_residual_sp, get_residual
+    from CPD.common_kernels import get_residual
     from CPD.NLS import CP_fastNLS_Optimizer, CP_ALSNLS_Optimizer, CP_safeNLS_Optimizer
 
     # TODO: Need iteration count for ALSNLS and SNLS?? .
@@ -52,9 +51,7 @@ def CP_NLS(tenpy,
     if Regu is None:
         Regu = 0
 
-    decrease = True
     increase = False
-
     flag = False
     iters = 0
 
@@ -79,14 +76,10 @@ def CP_NLS(tenpy,
         }
         optimizer = optimizer_list[method]
 
-    fitness_old = 0
     for i in range(num_iter):
 
         if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
-            if sp_res:
-                res = get_residual_sp(tenpy, O, T, A)
-            else:
-                res = get_residual(tenpy, T, A)
+            res = get_residual(tenpy, T, A)
             fitness = 1 - res / normT
 
             if tenpy.is_master_proc():
@@ -123,35 +116,15 @@ def CP_NLS(tenpy,
 
         time_all += t1 - t0
 
-        fitness_old = fitness
-
-        #Regu = Regu/2
-        #if Regu< 1e-08:
-        #    Regu = 1e-06
-        #if fitness > 0.999:
-        #    flag = True
-
-        #if flag:
-        #    Regu = 1e-07
-
-        #else:
         if Regu < 1e-07:
             increase = True
-            decrease = False
-
-        if Regu > 1:
-            decrease = True
+        elif Regu > 1:
             increase = False
 
         if increase:
             Regu = Regu * 2
-
-        elif decrease:
+        else:
             Regu = Regu / 2
-
-        #if Regu < 1e-03:
-        #    print("CHANGED REGU")
-        #    Regu= orig_Regu
 
     tenpy.printf(method + " method took", time_all, "seconds overall")
 
@@ -167,8 +140,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     arg_defs.add_general_arguments(parser)
     arg_defs.add_pp_arguments(parser)
-    arg_defs.add_lrdt_arguments(parser)
-    arg_defs.add_sparse_arguments(parser)
     arg_defs.add_nls_arguments(parser)
     arg_defs.add_col_arguments(parser)
     args, _ = parser.parse_known_args()
@@ -176,7 +147,7 @@ if __name__ == "__main__":
     # Set up CSV logging
     csv_path = join(results_dir, arg_defs.get_file_prefix(args) + '.csv')
     is_new_log = not Path(csv_path).exists()
-    csv_file = open(csv_path, 'a')  #, newline='')
+    csv_file = open(csv_path, 'a')
     csv_writer = csv.writer(csv_file,
                             delimiter=',',
                             quotechar='|',
@@ -194,9 +165,6 @@ if __name__ == "__main__":
     als_iter = args.als_iter
     num = args.num
     num_iter = args.num_iter
-    num_lowr_init_iter = args.num_lowr_init_iter
-    sp_frac = args.sp_fraction
-    sp_res = args.sp_res
     tensor = args.tensor
     maxiter = args.maxiter
     tlib = args.tlib
@@ -225,7 +193,7 @@ if __name__ == "__main__":
     elif tensor == "random":
         if args.decomposition == "CP":
             tenpy.printf("Testing random tensor")
-            [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, sp_frac,
+            [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, 1.,
                                                  args.seed)
         if args.decomposition == "Tucker":
             tenpy.printf("Testing random tensor")
@@ -235,18 +203,6 @@ if __name__ == "__main__":
     elif tensor == "random_col":
         [T, O] = synthetic_tensors.init_collinearity_tensor(
             tenpy, s, order, R, args.col, args.seed)
-    elif tensor == "mom_cons":
-        tenpy.printf("Testing order 4 momentum conservation tensor")
-        T = synthetic_tensors.init_mom_cons(tenpy, s)
-        O = None
-        sp_res = False
-    elif tensor == "mom_cons_sv":
-        tenpy.printf(
-            "Testing order 3 singular vectors of unfolding of momentum conservation tensor"
-        )
-        T = synthetic_tensors.init_mom_cons_sv(tenpy, s)
-        O = None
-        sp_res = False
     elif tensor == "amino":
         T = real_tensors.amino_acids(tenpy)
         O = None
@@ -259,15 +215,6 @@ if __name__ == "__main__":
     elif tensor == "scf":
         T = real_tensors.get_scf_tensor(tenpy)
         O = None
-    elif tensor == "embedding":
-        T = real_tensors.get_bert_embedding_tensor(tenpy)
-        O = None
-    elif tensor == "bert-param":
-        T = real_tensors.get_bert_weights_tensor(tenpy)
-        O = None
-    elif tensor == "mm":
-        tenpy.printf("Testing matrix multiplication tensor")
-        [T, O] = synthetic_tensors.init_mm(tenpy, s, R, args.seed)
     elif tensor == "negrandom":
         tenpy.printf("Testing random tensor with negative entries")
         [T, O] = synthetic_tensors.init_neg_rand(tenpy, order, s, R, sp_frac,
@@ -276,7 +223,6 @@ if __name__ == "__main__":
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
     Regu = args.regularization
-
     A = []
 
     if args.load_tensor is not '':
@@ -299,7 +245,6 @@ if __name__ == "__main__":
             for i in range(T.ndim):
                 A.append(tenpy.random((T.shape[i], args, hosvd_core_dim[i])))
 
-            # TODO: it doesn't support sparse calculation with hosvd here
-    CP_NLS(tenpy, A, T, O, num_iter, sp_res, csv_file, Regu, args.method, args,
+    CP_NLS(tenpy, A, T, O, num_iter, csv_file, Regu, args.method, args,
            args.res_calc_freq, nls_tol, cg_tol, grad_tol, num, switch_tol,
            nls_iter, als_iter, maxiter)

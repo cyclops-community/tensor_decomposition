@@ -11,7 +11,6 @@ import tensors.real_tensors as real_tensors
 import argparse
 import arg_defs as arg_defs
 import csv
-
 from utils import save_decomposition_results
 
 parent_dir = dirname(__file__)
@@ -23,7 +22,6 @@ def CP_ALS(tenpy,
            T,
            O,
            num_iter,
-           sp_res,
            csv_file=None,
            Regu=None,
            method='DT',
@@ -31,11 +29,9 @@ def CP_ALS(tenpy,
            res_calc_freq=1,
            tol=1e-05):
 
-    from CPD.common_kernels import get_residual_sp, get_residual
-    from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer, CP_partialPPALS_Optimizer
-    from CPD.lowr_ALS import CP_DTLRALS_Optimizer
+    from CPD.common_kernels import get_residual
+    from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
 
-    # TODO: currently all the methods are messed up. Needs to refactor a lot.
     flag_dt = True
 
     if csv_file is not None:
@@ -55,9 +51,7 @@ def CP_ALS(tenpy,
     else:
         optimizer_list = {
             'DT': CP_DTALS_Optimizer(tenpy, T, A),
-            'DTLR': CP_DTLRALS_Optimizer(tenpy, T, A, args),
             'PP': CP_PPALS_Optimizer(tenpy, T, A, args),
-            'partialPP': CP_partialPPALS_Optimizer(tenpy, T, A, args)
         }
         optimizer = optimizer_list[method]
 
@@ -65,22 +59,14 @@ def CP_ALS(tenpy,
     for i in range(num_iter):
 
         if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
-            if sp_res:
-                res = get_residual_sp(tenpy, O, T, A)
-            else:
-                res = get_residual(tenpy, T, A)
+            res = get_residual(tenpy, T, A)
             fitness = 1 - res / normT
 
             if tenpy.is_master_proc():
                 print("[", i, "] Residual is", res, "fitness is: ", fitness)
                 # write to csv file
                 if csv_file is not None:
-                    if method == 'NLS':
-                        csv_writer.writerow(
-                            [iters, time_all, res, fitness, flag_dt])
-                    else:
-                        csv_writer.writerow(
-                            [i, time_all, res, fitness, flag_dt])
+                    csv_writer.writerow([i, time_all, res, fitness, flag_dt])
                     csv_file.flush()
 
         if res < tol:
@@ -108,17 +94,15 @@ def Tucker_ALS(tenpy,
                T,
                O,
                num_iter,
-               sp_res,
                csv_file=None,
                Regu=None,
                method='DT',
                args=None,
                res_calc_freq=1):
 
-    from Tucker.common_kernels import get_residual_sp, get_residual
+    from Tucker.common_kernels import get_residual
     from Tucker.standard_ALS import Tucker_DTALS_Optimizer, Tucker_PPALS_Optimizer
 
-    # TODO: currently all the methods are messed up. Needs to refactor a lot.
     flag_dt = True
 
     if csv_file is not None:
@@ -138,11 +122,7 @@ def Tucker_ALS(tenpy,
 
     for i in range(num_iter):
         if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
-            if sp_res:
-                # TODO: implement the get residual sparse version
-                res = get_residual_sp(tenpy, O, T, optimizer.A)
-            else:
-                res = get_residual(tenpy, T, optimizer.A)
+            res = get_residual(tenpy, T, optimizer.A)
             fitness = 1 - res / normT
 
             if tenpy.is_master_proc():
@@ -174,15 +154,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     arg_defs.add_general_arguments(parser)
     arg_defs.add_pp_arguments(parser)
-    arg_defs.add_lrdt_arguments(parser)
-    arg_defs.add_sparse_arguments(parser)
     arg_defs.add_col_arguments(parser)
     args, _ = parser.parse_known_args()
 
     # Set up CSV logging
     csv_path = join(results_dir, arg_defs.get_file_prefix(args) + '.csv')
     is_new_log = not Path(csv_path).exists()
-    csv_file = open(csv_path, 'a')  #, newline='')
+    csv_file = open(csv_path, 'a')
     csv_writer = csv.writer(csv_file,
                             delimiter=',',
                             quotechar='|',
@@ -194,9 +172,6 @@ if __name__ == "__main__":
     r = args.r
     tol = args.tol
     num_iter = args.num_iter
-    num_lowr_init_iter = args.num_lowr_init_iter
-    sp_frac = args.sp_fraction
-    sp_res = args.sp_res
     tensor = args.tensor
     tlib = args.tlib
 
@@ -225,7 +200,7 @@ if __name__ == "__main__":
     elif tensor == "random":
         if args.decomposition == "CP":
             tenpy.printf("Testing random tensor")
-            [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, sp_frac,
+            [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, 1.,
                                                  args.seed)
         if args.decomposition == "Tucker":
             tenpy.printf("Testing random tensor")
@@ -235,18 +210,6 @@ if __name__ == "__main__":
     elif tensor == "random_col":
         [T, O] = synthetic_tensors.init_collinearity_tensor(
             tenpy, s, order, R, args.col, args.seed)
-    elif tensor == "mom_cons":
-        tenpy.printf("Testing order 4 momentum conservation tensor")
-        T = synthetic_tensors.init_mom_cons(tenpy, s)
-        O = None
-        sp_res = False
-    elif tensor == "mom_cons_sv":
-        tenpy.printf(
-            "Testing order 3 singular vectors of unfolding of momentum conservation tensor"
-        )
-        T = synthetic_tensors.init_mom_cons_sv(tenpy, s)
-        O = None
-        sp_res = False
     elif tensor == "amino":
         T = real_tensors.amino_acids(tenpy)
         O = None
@@ -259,19 +222,9 @@ if __name__ == "__main__":
     elif tensor == "scf":
         T = real_tensors.get_scf_tensor(tenpy)
         O = None
-    elif tensor == "embedding":
-        T = real_tensors.get_bert_embedding_tensor(tenpy)
-        O = None
-    elif tensor == "bert-param":
-        T = real_tensors.get_bert_weights_tensor(tenpy)
-        O = None
-    elif tensor == "mm":
-        tenpy.printf("Testing matrix multiplication tensor")
-        [T, O] = synthetic_tensors.init_mm(tenpy, s, R, args.seed)
     elif tensor == "negrandom":
         tenpy.printf("Testing random tensor with negative entries")
-        [T, O] = synthetic_tensors.init_neg_rand(tenpy, order, s, R, sp_frac,
-                                                 args.seed)
+        [T, O] = synthetic_tensors.init_neg_rand(tenpy, order, s, R, args.seed)
 
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
@@ -305,20 +258,18 @@ if __name__ == "__main__":
                                               T,
                                               args.hosvd_core_dim,
                                               compute_core=True)
-            # TODO: it doesn't support sparse calculation with hosvd here
-            CP_ALS(tenpy, A, compressed_T, O, 100, sp_res, csv_file, Regu,
-                   'DT', args, args.res_calc_freq, tol)
+            CP_ALS(tenpy, A, compressed_T, O, 100, csv_file, Regu, 'DT', args,
+                   args.res_calc_freq, tol)
             A_fullsize = []
             for i in range(T.ndim):
                 A_fullsize.append(tenpy.dot(transformer[i], A[i]))
-            CP_ALS(tenpy, A_fullsize, T, O, num_iter, sp_res, csv_file, Regu,
+            CP_ALS(tenpy, A_fullsize, T, O, num_iter, csv_file, Regu,
                    args.method, args, args.res_calc_freq, tol)
         else:
-            # TODO: it doesn't support sparse calculation with hosvd here
-            CP_ALS(tenpy, A, T, O, num_iter, sp_res, csv_file, Regu,
-                   args.method, args, args.res_calc_freq, tol)
+            CP_ALS(tenpy, A, T, O, num_iter, csv_file, Regu, args.method, args,
+                   args.res_calc_freq, tol)
     elif args.decomposition == "Tucker":
-        Tucker_ALS(tenpy, A, T, O, num_iter, sp_res, csv_file, Regu,
-                   args.method, args, args.res_calc_freq)
+        Tucker_ALS(tenpy, A, T, O, num_iter, csv_file, Regu, args.method, args,
+                   args.res_calc_freq)
     if tlib == "ctf":
         tepoch.end()

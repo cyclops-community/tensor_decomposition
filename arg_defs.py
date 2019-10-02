@@ -43,12 +43,11 @@ def add_general_arguments(parser):
         default="random",
         metavar='string',
         choices=[
-            'random', 'random_col', 'mom_cons', 'mom_cons_sv', 'amino',
-            'coil100', 'timelapse', 'scf', 'embedding', 'bert-param', 'mm',
+            'random', 'random_col', 'amino', 'coil100', 'timelapse', 'scf',
             'negrandom'
         ],
         help=
-        'choose tensor to test, available: random, random_col, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)'
+        'choose tensor to test, available: random, random_col, amino, coil100, timelapse, scf, negrandom (default: random)'
     )
     parser.add_argument(
         '--tlib',
@@ -223,49 +222,19 @@ def add_probability_arguments(parser):
 
 def get_prob_file_prefix(args):
     return "-".join(
-        filter(
-            None,
-            [
-                args.experiment_prefix,
-                args.decomposition,
-                args.method,
-                args.tensor,
-                's' + str(args.s),
-                'fR' + str(args.f_R),
-                'lR' + str(args.l_R),
-                #'spfrac' + str(args.sp_fraction),
-                #'splowrank' + str(args.sp_updatelowrank),
-                #'runlowrank' + str(args.run_lowrank),
-                #'runlowrankdt' + str(args.run_lowrank_dt),
-                #'numinteriter' + str(args.num_inter_iter),
-                #'pois' + str(args.pois_test),
-                #'numslices' + str(args.num_slices),
-                #'numinit-iter' + str(args.num_lowr_init_iter),
-                'regu' + str(args.regularization),
-                'tlib' + str(args.tlib)
-            ]))
+        filter(None, [
+            args.experiment_prefix, args.decomposition, args.method,
+            args.tensor, 's' + str(args.s), 'fR' + str(args.f_R),
+            'lR' + str(args.l_R), 'regu' + str(args.regularization),
+            'tlib' + str(args.tlib)
+        ]))
 
 
 def get_file_prefix(args):
     return "-".join(
-        filter(
-            None,
-            [
-                args.experiment_prefix,
-                args.decomposition,
-                args.method,
-                args.tensor,
-                's' + str(args.s),
-                'R' + str(args.R),
-                'r' + str(args.r),
-                #'spfrac' + str(args.sp_fraction),
-                #'splowrank' + str(args.sp_updatelowrank),
-                #'runlowrank' + str(args.run_lowrank),
-                #'runlowrankdt' + str(args.run_lowrank_dt),
-                #'numinteriter' + str(args.num_inter_iter),
-                #'pois' + str(args.pois_test),
-                #'numslices' + str(args.num_slices),
-                #'numinit-iter' + str(args.num_lowr_init_iter),
-                'regu' + str(args.regularization),
-                'tlib' + str(args.tlib)
-            ]))
+        filter(None, [
+            args.experiment_prefix, args.decomposition, args.method,
+            args.tensor, 's' + str(args.s), 'R' + str(args.R),
+            'r' + str(args.r), 'regu' + str(args.regularization),
+            'tlib' + str(args.tlib)
+        ]))

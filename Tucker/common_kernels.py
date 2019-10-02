@@ -90,8 +90,3 @@ def get_residual(tenpy, T, A):
     t1 = time.time()
     tenpy.printf("Residual computation took", t1 - t0, "seconds")
     return nrm
-
-
-def get_residual_sp(tenpy, O, T, A):
-    # TODO: implementation
-    pass
