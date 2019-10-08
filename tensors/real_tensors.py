@@ -158,7 +158,7 @@ def get_scf_tensor(tenpy):
     """
 
     from pyscf import gto, scf
-
+    # integrals in the basis of Cartesian, real-spherical and j-adapted spinor Gaussian type orbitals (GTO)
     mol = gto.Mole(basis='sto-3g')
     n = 8
     mol.atom = [['O', (0, 0, 0)], ['H', (0, 1, 0)], ['H', (0, 0, 1)]]
@@ -171,6 +171,12 @@ def get_scf_tensor(tenpy):
     # mol.atom = [['H',(0, 0, 0)]]
     # mol.atom.extend([['H', (i, i, i)] for i in range(1,n)])
     print(mol.atom)
+
+    """
+    Mean-field with periodic boundary condition
+    Self-consistent field (SCF) method
+    restricted Hartree Fock wave function
+    """
     mf = scf.RHF(mol).density_fit().run()
     T_sym = mf.with_df._cderi
     print(T_sym.shape)
