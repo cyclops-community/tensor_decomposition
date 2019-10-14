@@ -4,18 +4,6 @@ This repository implements efficient numerical algorithm for Alternating Least S
 
 This repository implements everything in Python, and is compatible with both Numpy backend, which allows fast seaquential running, and [Cyclops Tensor Framework](https://github.com/cyclops-community/ctf) backend, which allows fast distributed parallism.
 
-### TODOs
-
-- [ ] tests
-
-- [ ] Comments in get_scf_tensor function
-
-- [ ] remove redundent code in run_nls.py, convprob.py, contraction.py
-
-- [ ] add comments / necessary documentation for nls optimizers CPD/NLS.py
-
-- [ ] ReadMe and examples
-
 ### Prerequisite
 
 Run
