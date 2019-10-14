@@ -23,6 +23,7 @@ def CP_NLS(tenpy,
            T,
            O,
            num_iter,
+           sp_res,
            csv_file=None,
            Regu=None,
            method='NLS',
@@ -30,15 +31,19 @@ def CP_NLS(tenpy,
            res_calc_freq=1,
            nls_tol=1e-05,
            cg_tol=1e-03,
-           grad_tol=1e-05,
+           grad_tol=0.1,
            num=1,
            switch_tol=0.1,
            nls_iter=2,
            als_iter=30,
-           maxiter=0):
+           maxiter=0,
+           varying=True,
+           fact=2,
+           lower=1e-06,
+           upper=1):
 
     from CPD.common_kernels import get_residual
-    from CPD.NLS import CP_fastNLS_Optimizer, CP_ALSNLS_Optimizer, CP_safeNLS_Optimizer
+    from CPD.NLS import CP_fastNLS_Optimizer
 
     if csv_file is not None:
         csv_writer = csv.writer(csv_file,
@@ -48,15 +53,18 @@ def CP_NLS(tenpy,
 
     if Regu is None:
         Regu = 0
-
-    increase = False
+    if varying:
+        decrease = True
+        increase = False
     flag = False
     iters = 0
 
     normT = tenpy.vecnorm(T)
 
     if maxiter == 0:
-        maxiter = len(A) * (A[0].shape[0]) * (A[0].shape[1])
+        maxiter = sum(T.shape) * R
+
+    tenpy.printf(normT)
 
     time_all = 0.
     if args is None:
@@ -64,19 +72,16 @@ def CP_NLS(tenpy,
                                          args)
     else:
         optimizer_list = {
-            'NLS':
-            CP_fastNLS_Optimizer(tenpy, T, A, maxiter, cg_tol, num, args),
-            'NLSALS':
-            CP_ALSNLS_Optimizer(tenpy, T, A, cg_tol, num, switch_tol),
-            'SNLS':
-            CP_safeNLS_Optimizer(tenpy, T, A, maxiter, cg_tol, num, als_iter,
-                                 nls_iter)
+            'NLS': CP_fastNLS_Optimizer(tenpy, T, A, maxiter, cg_tol, num,
+                                        args),
         }
         optimizer = optimizer_list[method]
 
+    fitness_old = 0
+    prev_res = np.finfo(np.float32).max
     for i in range(num_iter):
 
-        if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
+        if i % res_calc_freq == 0 or i == num_iter - 1:
             res = get_residual(tenpy, T, A)
             fitness = 1 - res / normT
 
@@ -91,10 +96,12 @@ def CP_NLS(tenpy,
                     csv_file.flush()
 
         if res < nls_tol:
-            print('Method converged in', i, 'iterations')
+            print('Method converged due to residual tolerance in', i,
+                  'iterations')
+
             break
         t0 = time.time()
-        # Regu = 1/(i+1)
+
         print("Regu is:", Regu)
 
         if method == 'NLS':
@@ -107,15 +114,25 @@ def CP_NLS(tenpy,
 
         time_all += t1 - t0
 
-        if Regu < 1e-07:
-            increase = True
-        elif Regu > 1:
-            increase = False
+        if method == 'NLS':
+            if optimizer.g_norm < grad_tol:
+                print('Method converged due to gradient tolerance in', i,
+                      'iterations')
+                break
 
-        if increase:
-            Regu = Regu * 2
-        else:
-            Regu = Regu / 2
+        fitness_old = fitness
+
+        if varying:
+            if Regu < lower:
+                increase = True
+                decrease = False
+            if Regu > upper:
+                decrease = True
+                increase = False
+            if increase:
+                Regu = Regu * fact
+            elif decrease:
+                Regu = Regu / fact
 
     tenpy.printf(method + " method took", time_all, "seconds overall")
 
@@ -130,7 +147,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     arg_defs.add_general_arguments(parser)
-    arg_defs.add_pp_arguments(parser)
     arg_defs.add_nls_arguments(parser)
     arg_defs.add_col_arguments(parser)
     args, _ = parser.parse_known_args()
@@ -138,7 +154,7 @@ if __name__ == "__main__":
     # Set up CSV logging
     csv_path = join(results_dir, arg_defs.get_file_prefix(args) + '.csv')
     is_new_log = not Path(csv_path).exists()
-    csv_file = open(csv_path, 'a')
+    csv_file = open(csv_path, 'a')  #, newline='')
     csv_writer = csv.writer(csv_file,
                             delimiter=',',
                             quotechar='|',
@@ -159,6 +175,10 @@ if __name__ == "__main__":
     tensor = args.tensor
     maxiter = args.maxiter
     tlib = args.tlib
+    varying = args.varying
+    fact = args.varying_fact
+    lower = args.lower
+    upper = args.upper
 
     if tlib == "numpy":
         import backend.numpy_ext as tenpy
@@ -182,15 +202,7 @@ if __name__ == "__main__":
         T = tenpy.load_tensor_from_file(args.load_tensor + 'tensor.npy')
         O = None
     elif tensor == "random":
-        if args.decomposition == "CP":
-            tenpy.printf("Testing random tensor")
-            [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, 1.,
-                                                 args.seed)
-        if args.decomposition == "Tucker":
-            tenpy.printf("Testing random tensor")
-            shape = s * np.ones(order).astype(int)
-            T = tenpy.random(shape)
-            O = None
+        [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, 1., args.seed)
     elif tensor == "random_col":
         [T, O] = synthetic_tensors.init_collinearity_tensor(
             tenpy, s, order, R, args.col, args.seed)
@@ -214,6 +226,7 @@ if __name__ == "__main__":
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
     Regu = args.regularization
+
     A = []
 
     if args.load_tensor is not '':
@@ -236,6 +249,7 @@ if __name__ == "__main__":
             for i in range(T.ndim):
                 A.append(tenpy.random((T.shape[i], args, hosvd_core_dim[i])))
 
-    CP_NLS(tenpy, A, T, O, num_iter, csv_file, Regu, args.method, args,
+            # TODO: it doesn't support sparse calculation with hosvd here
+    CP_NLS(tenpy, A, T, O, num_iter, 1., csv_file, Regu, args.method, args,
            args.res_calc_freq, nls_tol, cg_tol, grad_tol, num, switch_tol,
-           nls_iter, als_iter, maxiter)
+           nls_iter, als_iter, maxiter, varying, fact, lower, upper)

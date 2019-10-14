@@ -59,6 +59,7 @@ def CP_ALS(tenpy,
     for i in range(num_iter):
 
         if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
+            print(A[0].shape)
             res = get_residual(tenpy, T, A)
             fitness = 1 - res / normT
 
@@ -73,7 +74,11 @@ def CP_ALS(tenpy,
             print('Method converged in', i, 'iterations')
             break
         t0 = time.time()
-        A = optimizer.step(Regu)
+        if method == 'PP':
+            A, pp_restart = optimizer.step(Regu)
+            flag_dt = not pp_restart
+        else:
+            A = optimizer.step(Regu)
         t1 = time.time()
         tenpy.printf("[", i, "] Sweep took", t1 - t0, "seconds")
 

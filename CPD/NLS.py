@@ -12,6 +12,16 @@ except ImportError:
     import queue
 
 
+def fast_hessian_contract_batch(tenpy, XX, AA, GD, GG, regu=1):
+    RR = regu * XX
+    RR += tenpy.einsum("niz,nzr->nir", XX, GD)
+    if tenpy.name() == 'numpy':
+        RR += np.einsum("niz,pjr,npzr,pjz->nir", AA, AA, GG, XX, optimize=True)
+    else:
+        RR += tenpy.einsum("niz,pjr,npzr,pjz->nir", AA, AA, GG, XX)
+    return RR
+
+
 def fast_hessian_contract(tenpy, X, A, gamma, regu=1):
     N = len(A)
     ret = []
@@ -24,8 +34,8 @@ def fast_hessian_contract(tenpy, X, A, gamma, regu=1):
             else:
                 B = tenpy.einsum("jr,jz->rz", A[p], X[p])
                 ret[n] += tenpy.einsum("iz,zr,rz->ir", A[n], M, B)
+        ret[n] += regu * X[n]
 
-        ret[n] += regu * tenpy.einsum('jj,ij->ij', gamma[n][n], X[n])
     return ret
 
 
@@ -45,7 +55,15 @@ class CP_fastNLS_Optimizer():
     and preconditioned conjugate gradient to speed up the process of solving
     damped Gauss-Newton problem of CP decomposition.
     """
-    def __init__(self, tenpy, T, A, maxiter, cg_tol=1e-4, num=1, args=None):
+    def __init__(self,
+                 tenpy,
+                 T,
+                 A,
+                 maxiter,
+                 cg_tol=1e-3,
+                 num=0,
+                 try_batch=False,
+                 args=None):
         self.tenpy = tenpy
         self.T = T
         self.A = A
@@ -57,6 +75,12 @@ class CP_fastNLS_Optimizer():
         self.total_iters = 0
         self.maxiter = maxiter
         self.nls_iter = 0
+        self.g_norm = 0
+        self.alpha = 1
+        self.DTD = None
+        self.GG = None
+        self.GD = None
+        s = A[0].shape[0]
 
     def _einstr_builder(self, M, s, ii):
         ci = ""
@@ -98,13 +122,38 @@ class CP_fastNLS_Optimizer():
                     result[i].append(M)
         self.gamma = result
 
+    def return_gamma(self):
+        N = len(self.A)
+        result = []
+        for i in range(N):
+            result.append([])
+            for j in range(N):
+                if j >= i:
+                    M = self.compute_coefficient_matrix(i, j)
+                    result[i].append(M)
+                else:
+                    M = result[j][i]
+                    result[i].append(M)
+        return result
+
+    def get_diagonal(self, g):
+        dag = []
+        for i in range(len(self.A)):
+            dag.append(
+                np.maximum(
+                    np.repeat(self.gamma[i][i].diagonal(), self.A[i].shape[0]),
+                    g[i].reshape(-1, order='F')))
+        dag = np.array(dag)
+
+        self.DTD = np.diag(dag.reshape(-1))
+
     def compute_block_diag_preconditioner(self, Regu):
         P = []
         for i in range(len(self.A)):
             n = self.gamma[i][i].shape[0]
             P.append(
-                self.tenpy.cholesky(self.gamma[i][i] + Regu *
-                                    np.diag(self.gamma[i][i].diagonal())))
+                self.tenpy.cholesky(self.gamma[i][i] +
+                                    Regu * self.tenpy.eye(n)))
         return P
 
     def gradient(self):
@@ -258,7 +307,6 @@ class CP_fastNLS_Optimizer():
                 break
 
             z_new = fast_block_diag_precondition(self.tenpy, r_new, P)
-
             beta = self.tenpy.mult_lists(r_new, z_new) / mul
 
             p = self.tenpy.list_add(z_new, self.tenpy.scalar_mul(beta, p))
@@ -266,6 +314,10 @@ class CP_fastNLS_Optimizer():
             r = r_new
             z = z_new
             counter += 1
+
+            if counter == self.maxiter:
+                end = time.time()
+                break
 
         end = time.time()
         self.tenpy.printf("cg took:", end - start)
@@ -287,14 +339,18 @@ class CP_fastNLS_Optimizer():
         V = LinearOperator(shape=(num_var, num_var), matvec=mv)
         return V
 
-    def update_A(self, delta):
+    def update_A(self, delta, alpha):
         for i in range(len(delta)):
-            self.A[i] += delta[i]
+            self.A[i] += alpha * delta[i]
 
     def step(self, Regu):
         self.compute_G()
         self.compute_gamma()
+
         g = self.gradient()
+        self.g_norm = self.tenpy.list_vecnorm(g)
+
+        self.tenpy.printf('gradient norm is', self.g_norm)
 
         P = self.compute_block_diag_preconditioner(Regu)
 
@@ -304,7 +360,8 @@ class CP_fastNLS_Optimizer():
 
         self.atol = self.num * self.tenpy.list_vecnorm(delta)
         self.tenpy.printf('cg iterations:', counter)
-        self.update_A(delta)
+
+        self.update_A(delta, self.alpha)
 
         self.tenpy.printf("total cg iterations", self.total_iters)
         self.nls_iter += 1
@@ -333,175 +390,3 @@ class CP_fastNLS_Optimizer():
         self.tenpy.printf('total cg iterations:', self.total_iters)
 
         return [self.A, self.total_iters]
-
-
-class cp_dtals_res_optimizer():
-    def __init__(self, tenpy, T, A):
-        self.tenpy = tenpy
-        self.T = T
-        self.A = A
-
-    def step(self, Regu):
-        # 1st mode
-        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0],
-                                           self.A[1], self.A[2])
-        TC = self.tenpy.einsum("ijk,ka->ija", res_T, self.A[2])
-        rhs = self.tenpy.einsum("ija,ja->ia", TC, self.A[1])
-        self.A[0] += solve_sys(
-            self.tenpy, compute_lin_sys(self.tenpy, self.A[1], self.A[2],
-                                        Regu), rhs)
-        # 2nd mode
-        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0],
-                                           self.A[1], self.A[2])
-        TC = self.tenpy.einsum("ijk,ka->ija", res_T, self.A[2])
-        rhs = self.tenpy.einsum("ija,ia->ja", TC, self.A[0])
-        self.A[1] += solve_sys(
-            self.tenpy, compute_lin_sys(self.tenpy, self.A[0], self.A[2],
-                                        Regu), rhs)
-        # 3rd mode
-        res_T = self.T - self.tenpy.einsum("ia,ja,ka->ijk", self.A[0],
-                                           self.A[1], self.A[2])
-        rhs = self.tenpy.einsum("ijk,ia,ja->ka", res_T, self.A[0], self.A[1])
-        self.A[2] += solve_sys(
-            self.tenpy, compute_lin_sys(self.tenpy, self.A[0], self.A[1],
-                                        Regu), rhs)
-        return self.A
-
-
-class CP_ALSNLS_Optimizer(CP_fastNLS_Optimizer, cp_dtals_res_optimizer):
-    def __init__(self,
-                 tenpy,
-                 T,
-                 A,
-                 cg_tol=1e-04,
-                 num=0,
-                 switch_tol=0.1,
-                 args=None):
-        CP_fastNLS_Optimizer.__init__(self, tenpy, T, A, cg_tol, num, args)
-        cp_dtals_res_optimizer.__init__(self, tenpy, T, A)
-        self.tenpy = tenpy
-        self.switch_tol = switch_tol
-        self.switch = False
-        self.A = A
-        self.count = 0
-        self.count_tol = 50
-
-    def _step_dt(self, Regu):
-        return cp_dtals_res_optimizer.step(self, Regu)
-
-    def _step_nls(self, Regu):
-
-        return CP_fastNLS_Optimizer.step(self, Regu)
-
-    def copy_A(self):
-        A_copy = []
-        for i in range(len(self.A)):
-            A_copy += [self.A[i].copy()]
-
-        return A_copy
-
-    def step(self, Regu):
-        if self.switch:
-            self.tenpy.printf("performing nls")
-            self.A = self._step_nls(Regu)
-
-        else:
-            if self.count != 0:
-                A_prev = self.copy_A()
-
-                self.A = self._step_dt(Regu)
-                self.count += 1
-                if self.count > self.count_tol:
-                    self.switch = True
-                    self.tenpy.printf("count reached, will switch to nls")
-
-                if self.tenpy.list_vecnorm(
-                        self.tenpy.list_add(
-                            self.A, self.tenpy.scalar_mul(
-                                -1, A_prev))) < self.switch_tol:
-                    self.switch = True
-                    self.tenpy.printf("norm reached, will switch to nls")
-            else:
-                self.A = self._step_dt(Regu)
-                self.count += 1
-
-        return self.A
-
-
-class CP_safeNLS_Optimizer(CP_fastNLS_Optimizer, cp_dtals_res_optimizer):
-    def __init__(self,
-                 tenpy,
-                 T,
-                 A,
-                 maxiter,
-                 cg_tol=1e-04,
-                 num=0,
-                 als_iter=10,
-                 nls_iter=2,
-                 args=None):
-        CP_fastNLS_Optimizer.__init__(self, tenpy, T, A, maxiter, cg_tol, num,
-                                      args)
-        cp_dtals_res_optimizer.__init__(self, tenpy, T, A)
-        self.tenpy = tenpy
-        self.switch = True
-        self.A = A
-        self.T = T
-        self.count = 0
-        self.als_iter = als_iter
-        self.prev_res = get_residual(tenpy, T, A)
-        self.nls_steps = 0
-        self.nls_iter = nls_iter
-
-    def _step_dt(self, Regu):
-        return cp_dtals_res_optimizer.step(self, Regu)
-
-    def update_A(self, delta):
-        for i in range(len(delta)):
-            self.A[i] += delta[i]
-
-    def _step_nls(self, Regu):
-        return CP_fastNLS_Optimizer.step(self, Regu)
-
-    def copy_A(self):
-        A_copy = []
-        for i in range(len(self.A)):
-            A_copy += [self.A[i].copy()]
-
-        return A_copy
-
-    def step(self, Regu, res, fitness):
-        if self.switch:
-            self.prev_res = res
-
-            self.count = 0
-
-            A_prev = self.copy_A()
-
-            self.tenpy.printf("performing nls")
-
-            if fitness >= 0.999:
-                Regu = 1e-05
-
-            for i in range(self.nls_iter):
-                [self.A, iters] = self._step_nls(Regu)
-            curr_res = get_residual(self.tenpy, self.T, self.A)
-
-            if curr_res <= self.prev_res:
-                self.prev_res = curr_res
-                self.nls_steps += self.nls_iter
-            else:
-                self.tenpy.printf(
-                    "Residual increased for NLS, will switch to ALS")
-                self.switch = False
-                self.A = A_prev[:]
-        else:
-            self.prev_res = res
-            delta = self._step_dt(Regu)
-            self.count += 1
-
-            if self.count == self.als_iter:
-                self.switch = True
-                self.tenpy.printf("count reached, will switch to NLS")
-
-        self.tenpy.printf("number of nls steps performed", self.nls_steps)
-        return self.A

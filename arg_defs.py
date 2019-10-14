@@ -146,14 +146,13 @@ def add_nls_arguments(parser):
         type=float,
         default=1e-03,
         metavar='float',
-        help='tolerance for conjugate gradient method in nls (default: 1e-04)')
+        help='tolerance for conjugate gradient method in nls (default: 1e-03)')
     parser.add_argument(
         '--grad-tol',
         type=float,
-        default=1e-05,
+        default=0.1,
         metavar='float',
-        help='gradient tolerance for nls to stop the iteration (default: 1e-05)'
-    )
+        help='gradient tolerance for nls to stop the iteration (default: 0.1)')
     parser.add_argument(
         '--num',
         type=float,
@@ -185,6 +184,35 @@ def add_nls_arguments(parser):
                         default=0,
                         metavar='int',
                         help='Number of cg iterations for NLS (default: Nsr)')
+    parser.add_argument('--varying',
+                        type=int,
+                        default=1,
+                        metavar='int',
+                        help='varying regularization for nls (default: 1)')
+    parser.add_argument(
+        '--varying-fact',
+        type=int,
+        default=2,
+        metavar='int',
+        help=
+        'Factor by which you would want to vary the regularization for NLS (default: 2)'
+    )
+    parser.add_argument(
+        '--lower',
+        type=float,
+        default=1e-06,
+        metavar='float',
+        help=
+        'Lower Threshhold till we vary the regularization for NLS (default: 1e-06)'
+    )
+    parser.add_argument(
+        '--upper',
+        type=int,
+        default=1,
+        metavar='int',
+        help=
+        'Upper Threshhold till we vary the regularization for NLS (default: 1)'
+    )
 
 
 def add_probability_arguments(parser):
