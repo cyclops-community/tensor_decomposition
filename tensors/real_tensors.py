@@ -153,10 +153,6 @@ def time_lapse_images(tenpy):
 
 
 def get_scf_tensor(tenpy):
-    """
-    TODO: add reference
-    """
-
     from pyscf import gto, scf
     # integrals in the basis of Cartesian, real-spherical and j-adapted spinor Gaussian type orbitals (GTO)
     mol = gto.Mole(basis='sto-3g')

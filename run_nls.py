@@ -40,8 +40,6 @@ def CP_NLS(tenpy,
     from CPD.common_kernels import get_residual
     from CPD.NLS import CP_fastNLS_Optimizer, CP_ALSNLS_Optimizer, CP_safeNLS_Optimizer
 
-    # TODO: Need iteration count for ALSNLS and SNLS?? .
-
     if csv_file is not None:
         csv_writer = csv.writer(csv_file,
                                 delimiter=',',
@@ -91,13 +89,6 @@ def CP_NLS(tenpy,
                     else:
                         csv_writer.writerow([i, time_all, res, fitness])
                     csv_file.flush()
-
-        ## Gradient norm??
-
-        #if method == 'NLS':
-        #    tenpy.vecnorm(optimizer.gradient) < grad_tol
-        #    print('Method converged in',i,'iterations')
-        #    break
 
         if res < nls_tol:
             print('Method converged in', i, 'iterations')
