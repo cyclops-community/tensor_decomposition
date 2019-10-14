@@ -32,11 +32,12 @@ def amino_acids(tenpy):
     tensor_name = 'amino.mat'
 
     download_unzip_data(urls, zip_names, data_dir)
-    tensor = loadmat(join(data_dir, tensor_name))['X'].reshape((5,61,201))
+    tensor = loadmat(join(data_dir, tensor_name))['X'].reshape((5, 61, 201))
 
     if tenpy.name() == 'ctf':
         return tenpy.from_nparray(tensor)
     return tensor
+
 
 def coil_100(tenpy):
     """
@@ -51,20 +52,22 @@ def coil_100(tenpy):
     data_dir = join(parent_dir, 'data')
 
     def create_bin():
-        urls = ['http://www.cs.columbia.edu/CAVE/databases/SLAM_coil-20_coil-100/coil-100/coil-100.zip']
+        urls = [
+            'http://www.cs.columbia.edu/CAVE/databases/SLAM_coil-20_coil-100/coil-100/coil-100.zip'
+        ]
         zip_names = ['coil-100.zip']
         file_name = 'coil-100/'
         download_unzip_data(urls, zip_names, data_dir)
 
         coil_folder = join(data_dir, file_name)
-        nonimage_names = ['convertGroupppm2png.pl','convertGroupppm2png.pl~']
+        nonimage_names = ['convertGroupppm2png.pl', 'convertGroupppm2png.pl~']
         for file in nonimage_names:
-            nonimage_path = join(coil_folder,file)
+            nonimage_path = join(coil_folder, file)
             if os.path.isfile(nonimage_path):
                 os.remove(nonimage_path)
 
         pixel = load_images_from_folder(coil_folder)
-        pixel_out = np.reshape(pixel,(7200,128,128,3)).astype(float)
+        pixel_out = np.reshape(pixel, (7200, 128, 128, 3)).astype(float)
 
         output_file = open(join(data_dir, 'coil-100.bin'), 'wb')
         print("Print out pixels ......")
@@ -73,11 +76,13 @@ def coil_100(tenpy):
 
     if not os.path.isfile(join(data_dir, 'coil-100.bin')):
         create_bin()
-    pixels = np.fromfile(join(data_dir, 'coil-100.bin'), dtype=float).reshape((7200,128,128,3))
+    pixels = np.fromfile(join(data_dir, 'coil-100.bin'), dtype=float).reshape(
+        (7200, 128, 128, 3))
 
     if tenpy.name() == 'ctf':
         return tenpy.from_nparray(pixels)
     return pixels
+
 
 def time_lapse_images(tenpy):
     """
@@ -92,47 +97,43 @@ def time_lapse_images(tenpy):
     data_dir = join(parent_dir, 'data')
 
     def create_bin():
-        urls = ['https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1140.zip',
-                'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1240.zip',
-                'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1345.zip',
-                'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1441.zip',
-                'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1600.zip',
-                'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1637.zip',
-                'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1745.zip',
-                'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1845.zip',
-                'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1941.zip'
-                ]
-        zip_names = ['nogueiro_1140.zip',
-                     'nogueiro_1240.zip',
-                     'nogueiro_1345.zip',
-                     'nogueiro_1441.zip',
-                     'nogueiro_1600.zip',
-                     'nogueiro_1637.zip',
-                     'nogueiro_1745.zip',
-                     'nogueiro_1845.zip',
-                     'nogueiro_1941.zip'
-                     ]
+        urls = [
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1140.zip',
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1240.zip',
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1345.zip',
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1441.zip',
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1600.zip',
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1637.zip',
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1745.zip',
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1845.zip',
+            'https://personalpages.manchester.ac.uk/staff/d.h.foster/Time-Lapse_HSIs/nogueiro/nogueiro_1941.zip'
+        ]
+        zip_names = [
+            'nogueiro_1140.zip', 'nogueiro_1240.zip', 'nogueiro_1345.zip',
+            'nogueiro_1441.zip', 'nogueiro_1600.zip', 'nogueiro_1637.zip',
+            'nogueiro_1745.zip', 'nogueiro_1845.zip', 'nogueiro_1941.zip'
+        ]
         download_unzip_data(urls, zip_names, data_dir)
 
         x = []
         print("Loading 1st dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1140.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1140.mat')['hsi'])
         print("Loading 2nd dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1240.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1240.mat')['hsi'])
         print("Loading 3rd dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1345.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1345.mat')['hsi'])
         print("Loading 4th dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1441.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1441.mat')['hsi'])
         print("Loading 5th dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1600.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1600.mat')['hsi'])
         print("Loading 6th dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1637.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1637.mat')['hsi'])
         print("Loading 7th dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1745.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1745.mat')['hsi'])
         print("Loading 8th dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1845.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1845.mat')['hsi'])
         print("Loading 9th dataset ......")
-        x.append(loadmat(data_dir+'/nogueiro_1941.mat')['hsi'])
+        x.append(loadmat(data_dir + '/nogueiro_1941.mat')['hsi'])
         x = np.asarray(x).astype(float)
         print(x.shape)
 
@@ -143,77 +144,47 @@ def time_lapse_images(tenpy):
 
     if not os.path.isfile(join(data_dir, 'time-lapse.bin')):
         create_bin()
-    pixels = np.fromfile(join(data_dir, 'time-lapse.bin'), dtype=float).reshape((9, 1024, 1344, 33))
+    pixels = np.fromfile(join(data_dir, 'time-lapse.bin'),
+                         dtype=float).reshape((9, 1024, 1344, 33))
 
     if tenpy.name() == 'ctf':
         return tenpy.from_nparray(pixels)
     return pixels
 
+
 def get_scf_tensor(tenpy):
-
     from pyscf import gto, scf
-
+    # integrals in the basis of Cartesian, real-spherical and j-adapted spinor Gaussian type orbitals (GTO)
     mol = gto.Mole(basis='sto-3g')
     n = 8
-    mol.atom = [['O',(0, 0, 0)],['H',( 0, 1, 0)],['H',(0, 0, 1)]]
-    mol.atom.extend([['O',(i, 0, 0)] for i in range(1,n)])
-    mol.atom.extend([['H',(i, 1, 0)] for i in range(1,n)])
-    mol.atom.extend([['H',(i, 0, 1)] for i in range(1,n)])
+    mol.atom = [['O', (0, 0, 0)], ['H', (0, 1, 0)], ['H', (0, 0, 1)]]
+    mol.atom.extend([['O', (i, 0, 0)] for i in range(1, n)])
+    mol.atom.extend([['H', (i, 1, 0)] for i in range(1, n)])
+    mol.atom.extend([['H', (i, 0, 1)] for i in range(1, n)])
 
     # mol = gto.Mole(basis='def2-tzvp')
     # n = 20
     # mol.atom = [['H',(0, 0, 0)]]
     # mol.atom.extend([['H', (i, i, i)] for i in range(1,n)])
     print(mol.atom)
+
+    """
+    Mean-field with periodic boundary condition
+    Self-consistent field (SCF) method
+    restricted Hartree Fock wave function
+    """
     mf = scf.RHF(mol).density_fit().run()
     T_sym = mf.with_df._cderi
     print(T_sym.shape)
     NN1 = T_sym.shape[1]
-    N = int(np.floor(np.sqrt(NN1*2)))
-    print(N,N*(N+1)//2,NN1)
-    T = np.zeros((T_sym.shape[0],N,N))
+    N = int(np.floor(np.sqrt(NN1 * 2)))
+    print(N, N * (N + 1) // 2, NN1)
+    T = np.zeros((T_sym.shape[0], N, N))
     print(T.shape)
     for i in range(T.shape[0]):
         T[i][np.triu_indices(N)] = T_sym[i][:]
         T[i] += T[i].T
-        T[i] -= np.diag(np.diagonal(T[i])/2.)
+        T[i] -= np.diag(np.diagonal(T[i]) / 2.)
     if tenpy.name() == 'ctf':
         return tenpy.from_nparray(T)
     return T
-
-def get_bert_embedding_tensor(tenpy):
-
-    parent_dir = join(dirname(__file__), os.pardir)
-    data_dir = join(parent_dir, 'saved-tensors/')
-    try:
-        os.stat(data_dir+'BERT-word-embedding.npy')
-    except:
-        os.system('bash saved-tensors/download.sh embedding')  
-
-    tensor = tenpy.load_tensor_from_file(data_dir+'BERT-word-embedding.npy')
-    assert(tensor.shape == (30522, 768))
-    return tenpy.reshape(tensor[:30276,:], (174,174,768))
-
-
-def get_bert_weights_tensor(tenpy):
-
-    parent_dir = join(dirname(__file__), os.pardir)
-    data_dir = join(parent_dir, 'saved-tensors/')
-    try:
-        os.stat(data_dir+'bert_param')
-    except:
-        os.system('cd saved-tensors; bash download.sh bert-param')  
-        os.system('cd saved-tensors; tar -xzf bert_param.tar.gz')
-
-    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/querys.npy')
-    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/keys.npy')
-    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/values.npy')
-    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/outputs.npy')
-    tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/intermediate_denses.npy')
-    # tensor = tenpy.load_tensor_from_file(data_dir+'bert_param/output_denses.npy')
-    # assert(tensor.shape == (12, 768, 768))
-    assert(tensor.shape == (12, 3072, 768))
-    # assert(tensor.shape == (12, 768, 3072))
-    return tensor#tenpy.reshape(tensor[0,:,:], (1,3072,768))
-
-
