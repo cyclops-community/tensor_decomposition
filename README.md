@@ -37,8 +37,17 @@ to test some simple CP runs.
 
 ### Running CP decomposition with NLS
 
+Run
+
+```
+python run_nls.py -h
+
+```
+to see existing input arguments and their functions with default values
+
 
 ### ALS/NLS performance comparision
+
 
 ### Convergence probability
 
