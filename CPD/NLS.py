@@ -1,10 +1,9 @@
-from CPD.common_kernels import compute_number_of_variables, compute_lin_sys, flatten_Tensor, reshape_into_matrices, solve_sys, get_residual
+from CPD.common_kernels import compute_number_of_variables,  flatten_Tensor, reshape_into_matrices,  get_residual
 from scipy.sparse.linalg import LinearOperator
-from CPD.standard_ALS import CP_DTALS_Optimizer
 
 import scipy.sparse.linalg as spsalg
 import numpy as np
-import time
+#import time
 
 try:
     import Queue as queue
@@ -31,11 +30,11 @@ def fast_hessian_contract(tenpy,X,A,gamma,diag,regu=1):
             if n==p:
                 ret[n] += tenpy.einsum("iz,zr->ir",X[p],M)
             else:
-                time0 = time.time()
+               # time0 = time.time()
                 B = tenpy.einsum("jr,jz->rz",A[p],X[p])
-                time1 = time.time()
+                #time1 = time.time()
                 ret[n] += tenpy.einsum("iz,zr,rz->ir",A[n],M,B)
-                time2 = time.time()
+                #time2 = time.time()
         
         if diag:
             ret[n] += regu*tenpy.einsum('jj,ij->ij',gamma[n][n],X[n])
@@ -143,13 +142,6 @@ class CP_fastNLS_Optimizer():
                     result[i].append(M)
         return result
         
-    def get_diagonal(self,g):
-        dag = []
-        for i in range(len(self.A)):
-            dag.append(np.maximum(np.repeat(self.gamma[i][i].diagonal(),self.A[i].shape[0]),g[i].reshape(-1,order= 'F')))
-        dag = np.array(dag)
-        
-        self.DTD = np.diag(dag.reshape(-1))
 
     
     def compute_block_diag_preconditioner(self,Regu):
@@ -223,18 +215,6 @@ class CP_fastNLS_Optimizer():
         return gg
     
 
-    def power_method(self,l,iter=1):
-        for i in range(iter):
-            l = fast_hessian_contract(self.tenpy,l,self.A,self.gamma,0)
-            a = self.tenpy.list_vecnorm(l)
-            l = self.tenpy.scalar_mul(1/a,l)
-        return l
-
-    def rayleigh_quotient(self,l):
-        a = self.tenpy.mult_lists(l,fast_hessian_contract(self.tenpy,l,self.A,self.gamma,0))
-        b = self.tenpy.list_vecnormsq(l)
-        return a/b
-
 
     def create_fast_hessian_contract_LinOp(self,Regu):
         num_var = compute_number_of_variables(self.A)
@@ -253,25 +233,25 @@ class CP_fastNLS_Optimizer():
         return V
 
     def matvec(self,Regu,delta):
-        t0 = time.time()
+        #t0 = time.time()
         
         A = self.A
         gamma = self.gamma
         tenpy = self.tenpy
         diag = self.diag
         result = fast_hessian_contract(tenpy,delta,A,gamma,diag,Regu)
-        t1 = time.time()
+        #t1 = time.time()
         return result
     
     def matvec2(self,Regu,delta):
-        t0 = time.time()
+        #t0 = time.time()
         result = fast_hessian_contract_batch(self.tenpy,delta,self.AA,self.GG,self.GD,Regu)
         
-        t1 = time.time()
+        #t1 = time.time()
         return result
 
     def fast_conjugate_gradient_batch(self,gg,Regu):
-        start = time.time()
+        #start = time.time()
 
         N = len(self.A)
         XX = self.tenpy.zeros(self.AA.shape)
@@ -295,7 +275,7 @@ class CP_fastNLS_Optimizer():
 
             if self.tenpy.vecnorm(RR_new)<tol:
                 counter+=1
-                end = time.time()
+                #end = time.time()
                 break
 
             beta = self.tenpy.vecnorm(RR_new)**2/(self.tenpy.vecnorm(RR)**2)
@@ -305,7 +285,7 @@ class CP_fastNLS_Optimizer():
             counter += 1
 
             if counter == self.maxiter:
-                end = time.time()
+                #end = time.time()
                 break
                 
         #self.tenpy.printf('cg took',end-start)
@@ -326,7 +306,7 @@ class CP_fastNLS_Optimizer():
         
         r = g
         
-        self.tenpy.printf('starting res in cg is',self.tenpy.list_vecnorm(r))
+        #self.tenpy.printf('starting res in cg is',self.tenpy.list_vecnorm(r))
         if g_norm <tol:
             return x
         
@@ -446,14 +426,9 @@ class CP_fastNLS_Optimizer():
         for i in range(len(delta)):
             self.temp[i] += alpha*delta[i]
             
-    def normalise_step(self,delta):
-        norm = self.tenpy.list_vecnorm(delta)
-        delta= delta/norm
-        return [delta,norm]
     
     def armijo_line(self,A_res,delta,g,alpha=1.0):
         m = self.tenpy.mult_lists(g,delta)
-        self.tenpy.printf("m is",m)
         t= self.c*m
         for i in range(self.arm_iter):
             self.update_temp(delta,alpha)
@@ -491,7 +466,6 @@ class CP_fastNLS_Optimizer():
             self.temp[i] = self.A[i].copy()
             
         if self.Arm:
-            #[delta,alpha] = self.normalise_step(delta)
             A_res = get_residual(self.tenpy,self.T,self.A)
             alpha = self.armijo_line(A_res,self.delta,g)
             self.update_A(self.delta,alpha)
@@ -516,9 +490,6 @@ class CP_fastNLS_Optimizer():
 
         self.compute_G()
         self.compute_gamma()
-        #l = self.power_method([self.tenpy.random(M.shape) for M in self.A])
-        #L2 = self.rayleigh_quotient(l)
-        #print("L2 norm of hessian is ",L2)
         g = flatten_Tensor(self.tenpy,self.gradient())
         mult_LinOp = self.create_fast_hessian_contract_LinOp(Regu)
         P = self.compute_block_diag_preconditioner(Regu)
