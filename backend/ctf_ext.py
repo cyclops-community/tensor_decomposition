@@ -61,13 +61,18 @@ def scalar_mul(sclr, list_A):
     return [sclr * A for A in list_A]
 
 
-def mult_lists(list_A, list_B):
-    l = [A * B for (A, B) in zip(list_A, list_B)]
+def mult_lists(list_A,list_B):
     s = 0
-    for i in range(len(l)):
-        s += ctf.sum(l[i])
-
+    for i in range(len(list_A)):
+        s+= ctf.einsum('ij,ij->',list_A[i],list_B[i])
     return s
+
+def scl_list_add(scl,list_A,list_B):
+    x= []
+    for i in range(len(list_A)):
+        x.append(list_A[i]+scl*list_B[i])
+            
+    return x
 
 
 def list_vecnormsq(list_A):

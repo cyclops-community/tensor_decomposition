@@ -59,7 +59,6 @@ def CP_ALS(tenpy,
     for i in range(num_iter):
 
         if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
-            print(A[0].shape)
             res = get_residual(tenpy, T, A)
             fitness = 1 - res / normT
 

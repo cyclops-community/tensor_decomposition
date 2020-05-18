@@ -195,7 +195,7 @@ class CP_fastNLS_Optimizer():
                 ss.remove(ii)
                 s.append((ss,N))
             M = s[-1][1]
-            g = -1*M + self.A[i].dot(self.gamma[i][i])
+            g = M - self.A[i].dot(self.gamma[i][i])
             grad.append(g)
         return grad
     
@@ -278,7 +278,7 @@ class CP_fastNLS_Optimizer():
         
         tol = np.max([self.atol,self.cg_tol*self.tenpy.vecnorm(gg)])
 
-        RR = -1*gg
+        RR = gg
 
         if self.tenpy.vecnorm(RR)<tol:
             return XX
@@ -308,25 +308,28 @@ class CP_fastNLS_Optimizer():
                 end = time.time()
                 break
                 
-        self.tenpy.printf('cg took',end-start)
-        #x = [XX[i,:,:] for i in range(N)]
+        #self.tenpy.printf('cg took',end-start)
+        x = [XX[i,:,:] for i in range(N)]
 
-        return XX,counter
+        return x,counter
 
 
     def fast_conjugate_gradient(self,g,Regu):
-        start = time.time()
+        #start = time.time()
 
         x = [self.tenpy.zeros(A.shape) for A in g]
+        
+        g_norm = self.tenpy.list_vecnorm(g)
 
-        tol = np.max([self.atol,np.min([self.cg_tol,np.sqrt(self.tenpy.list_vecnorm(g))])])*self.tenpy.list_vecnorm(g)
+        tol = np.max([self.atol,np.min([self.cg_tol,np.sqrt(g_norm)])])*g_norm
         
         
-        r = self.tenpy.scalar_mul(-1,g)
+        r = g
         
         self.tenpy.printf('starting res in cg is',self.tenpy.list_vecnorm(r))
-        if self.tenpy.list_vecnorm(r)<tol:
+        if g_norm <tol:
             return x
+        
         p = r
         counter = 0
 
@@ -335,45 +338,47 @@ class CP_fastNLS_Optimizer():
 
             prod = self.tenpy.mult_lists(p,mv)
 
-            alpha = self.tenpy.list_vecnormsq(r)/prod
+            alpha = self.tenpy.mult_lists(r,r)/prod
 
-            x = self.tenpy.list_add(x,self.tenpy.scalar_mul(alpha,p))
+            x = self.tenpy.scl_list_add(alpha,x,p)
 
-            r_new = self.tenpy.list_add(r, self.tenpy.scalar_mul(-1,self.tenpy.scalar_mul(alpha,mv)))
+            r_new = self.tenpy.scl_list_add(-1*alpha,r,mv)
                 
             #self.tenpy.printf('res in cg is',self.tenpy.list_vecnorm(r_new))
 
             if self.tenpy.list_vecnorm(r_new)<tol:
                 counter+=1
-                end = time.time()
+                #end = time.time()
                 break
-            beta = self.tenpy.list_vecnormsq(r_new)/self.tenpy.list_vecnormsq(r)
+            beta = self.tenpy.mult_lists(r_new,r_new)/self.tenpy.mult_lists(r,r)
 
-            p = self.tenpy.list_add(r_new, self.tenpy.scalar_mul(beta,p))
+            p = self.tenpy.scl_list_add(beta,r_new,p)
             r = r_new
             counter += 1
 
             if counter == self.maxiter:
-                end = time.time()
+                #end = time.time()
                 break
                 
         #self.tenpy.printf('cg took',end-start)
+        
 
         return x,counter
 
     def fast_precond_conjugate_gradient(self,g,P,Regu):
-        start = time.time()
+        #start = time.time()
         
         x = [self.tenpy.zeros(A.shape) for A in g]
-
+        
+        g_norm = self.tenpy.list_vecnorm(g)
             
 
-        tol = np.max([self.atol,np.min([self.cg_tol,np.sqrt(self.tenpy.list_vecnorm(g))])])*self.tenpy.list_vecnorm(g)
-
-        r = self.tenpy.scalar_mul(-1,g)
-
-        if self.tenpy.list_vecnorm(r)<tol:
+        tol = np.max([self.atol,np.min([self.cg_tol,np.sqrt(g_norm)])])*g_norm
+        
+        if g_norm<tol:
             return x
+
+        r = g
 
         z = fast_block_diag_precondition(self.tenpy,r,P)
 
@@ -385,33 +390,33 @@ class CP_fastNLS_Optimizer():
 
             mul = self.tenpy.mult_lists(r,z)
 
-            alpha = mul/(self.tenpy.mult_lists(p,mv) + 1e-30)
+            alpha = mul/self.tenpy.mult_lists(p,mv) 
 
-            x =self.tenpy.list_add(x,self.tenpy.scalar_mul(alpha,p))
+            x =self.tenpy.scl_list_add(alpha,x,p)
 
-            r_new = self.tenpy.list_add(r, self.tenpy.scalar_mul(-1,self.tenpy.scalar_mul(alpha,mv)))
+            r_new = self.tenpy.scl_list_add(-1*alpha,r,mv)
             
             
             if self.tenpy.list_vecnorm(r_new)<tol:
                 counter+=1
-                end = time.time()
+                #end = time.time()
                 break
 
             z_new = fast_block_diag_precondition(self.tenpy,r_new,P)
 
-            beta = self.tenpy.mult_lists(r_new,z_new)/(mul+1e-30)
+            beta = self.tenpy.mult_lists(r_new,z_new)/mul
 
-            p = self.tenpy.list_add(z_new, self.tenpy.scalar_mul(beta,p))
+            p = self.tenpy.scl_list_add(beta,z_new,p)
 
             r = r_new
             z = z_new
             counter += 1
             
             if counter == self.maxiter:
-                end = time.time()
+                #end = time.time()
                 break
                 
-        end = time.time()
+        #end = time.time()
         #self.tenpy.printf("cg took:",end-start)
 
         return x,counter
