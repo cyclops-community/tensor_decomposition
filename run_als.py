@@ -229,6 +229,9 @@ if __name__ == "__main__":
     elif tensor == "negrandom":
         tenpy.printf("Testing random tensor with negative entries")
         [T, O] = synthetic_tensors.init_neg_rand(tenpy, order, s, R, args.seed)
+    elif tensor == "randn":
+        tenpy.printf("Testing random tensor with normally distributed entries")
+        [T,O] = synthetic_tensors.init_randn(tenpy,order,s,R,1.,args.seed)
 
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
