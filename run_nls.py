@@ -97,7 +97,7 @@ def CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='NLS',args
                 tenpy.printf('Method converged due to gradient tolerance in',i,'iterations')
                 break
         
-        fitness_old = fitness
+        #fitness_old = fitness
         
         
         if varying:

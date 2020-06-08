@@ -4,8 +4,6 @@ from scipy.sparse.linalg import LinearOperator
 import scipy.sparse.linalg as spsalg
 import numpy as np
 
-import time
-
 try:
     import Queue as queue
 except ImportError:
