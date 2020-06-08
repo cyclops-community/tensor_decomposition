@@ -328,7 +328,7 @@ class CP_fastNLS_Optimizer():
         return x,counter
 
     def fast_precond_conjugate_gradient(self,g,P,Regu):
-        #start = time.time()
+        start = time.time()
         
         x = [self.tenpy.zeros(A.shape) for A in g]
         
@@ -374,8 +374,8 @@ class CP_fastNLS_Optimizer():
                 #end = time.time()
                 break
                 
-        #end = time.time()
-        #self.tenpy.printf("cg took:",end-start)
+        end = time.time()
+        self.tenpy.printf("cg took:",end-start)
 
         return x,counter
 
