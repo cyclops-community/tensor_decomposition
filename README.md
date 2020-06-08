@@ -46,11 +46,26 @@ python run_nls.py -h
 to see existing input arguments and their functions with default values
 
 
-### ALS/NLS performance comparision
+### ALS/GN performance comparision
+
+The comparison in contraction ALS and GN CG iteration is done using Contraction.py file.
+Run
+
+```
+python Contraction.py -h
+```
+
+to see existing input arguments
 
 
 ### Convergence probability
 
+The file Convprob.py can be used to compare the convergence probability of different methods. Run
+
+```
+python Convprob.py -h
+```
+to see input arguments with their functions and default values
 
 ## Visualization with Visdom
 
