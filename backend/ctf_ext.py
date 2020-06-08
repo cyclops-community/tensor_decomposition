@@ -36,6 +36,11 @@ def TTTP(T, A):
     """
     return ctf.TTTP(T, A)
 
+def dot_product(a,b):
+    mystr = _get_num_str(a.ndim)
+    einstr = mystr +"," + mystr + "->"
+    return einsum(einstr,a,b)
+
 
 def is_master_proc():
     if ctf.comm().rank() == 0:

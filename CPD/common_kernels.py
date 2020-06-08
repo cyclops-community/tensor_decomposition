@@ -107,6 +107,8 @@ def solve_sys(tenpy, G, RHS):
     return X
 
 
+
+
 def get_residual(tenpy,T,A):
     t0 = time.time()
     V = tenpy.ones(T.shape)

@@ -3,7 +3,8 @@ from scipy.sparse.linalg import LinearOperator
 
 import scipy.sparse.linalg as spsalg
 import numpy as np
-#import time
+
+import time
 
 try:
     import Queue as queue
@@ -26,22 +27,17 @@ def fast_hessian_contract(tenpy,X,A,gamma,diag,regu=1):
     for n in range(N):
         ret.append(tenpy.zeros(A[n].shape))
         for p in range(N):
-            M = gamma[n][p]
             if n==p:
-                ret[n] += tenpy.einsum("iz,zr->ir",X[p],M)
+                ret[n] += tenpy.einsum("iz,zr->ir",X[p],gamma[n][p])
             else:
-               # time0 = time.time()
-                B = tenpy.einsum("jr,jz->rz",A[p],X[p])
-                #time1 = time.time()
-                ret[n] += tenpy.einsum("iz,zr,rz->ir",A[n],M,B)
-                #time2 = time.time()
+                ret[n] += tenpy.einsum("iz,zr,jr,jz->ir",A[n],gamma[n][p],A[p],X[p])
         
         if diag:
             ret[n] += regu*tenpy.einsum('jj,ij->ij',gamma[n][n],X[n])
             
         else:
             ret[n]+= regu*X[n]
-
+            
     return ret
 
 def fast_block_diag_precondition(tenpy,X,P):
@@ -233,22 +229,10 @@ class CP_fastNLS_Optimizer():
         return V
 
     def matvec(self,Regu,delta):
-        #t0 = time.time()
-        
-        A = self.A
-        gamma = self.gamma
-        tenpy = self.tenpy
-        diag = self.diag
-        result = fast_hessian_contract(tenpy,delta,A,gamma,diag,Regu)
-        #t1 = time.time()
-        return result
+        return fast_hessian_contract(self.tenpy,delta,self.A,self.gamma,self.diag,Regu)
     
     def matvec2(self,Regu,delta):
-        #t0 = time.time()
-        result = fast_hessian_contract_batch(self.tenpy,delta,self.AA,self.GG,self.GD,Regu)
-        
-        #t1 = time.time()
-        return result
+        return fast_hessian_contract_batch(self.tenpy,delta,self.AA,self.GG,self.GD,Regu)
 
     def fast_conjugate_gradient_batch(self,gg,Regu):
         #start = time.time()
@@ -346,7 +330,7 @@ class CP_fastNLS_Optimizer():
         return x,counter
 
     def fast_precond_conjugate_gradient(self,g,P,Regu):
-        #start = time.time()
+        start = time.time()
         
         x = [self.tenpy.zeros(A.shape) for A in g]
         
@@ -358,9 +342,7 @@ class CP_fastNLS_Optimizer():
         if g_norm<tol:
             return x
 
-        r = g
-
-        z = fast_block_diag_precondition(self.tenpy,r,P)
+        z = fast_block_diag_precondition(self.tenpy,g,P)
 
         p = z
 
@@ -368,35 +350,33 @@ class CP_fastNLS_Optimizer():
         while True:
             mv = self.matvec(Regu,p)
 
-            mul = self.tenpy.mult_lists(r,z)
+            mul = self.tenpy.mult_lists(g,z)
 
             alpha = mul/self.tenpy.mult_lists(p,mv) 
 
             x =self.tenpy.scl_list_add(alpha,x,p)
 
-            r_new = self.tenpy.scl_list_add(-1*alpha,r,mv)
+            g = self.tenpy.scl_list_add(-1*alpha,g,mv)
             
             
-            if self.tenpy.list_vecnorm(r_new)<tol:
+            if self.tenpy.list_vecnorm(g)<tol:
                 counter+=1
                 #end = time.time()
                 break
 
-            z_new = fast_block_diag_precondition(self.tenpy,r_new,P)
+            z = fast_block_diag_precondition(self.tenpy,g,P)
 
-            beta = self.tenpy.mult_lists(r_new,z_new)/mul
+            beta = self.tenpy.mult_lists(g,z)/mul
 
-            p = self.tenpy.scl_list_add(beta,z_new,p)
+            p = self.tenpy.scl_list_add(beta,z,p)
 
-            r = r_new
-            z = z_new
             counter += 1
             
             if counter == self.maxiter:
                 #end = time.time()
                 break
                 
-        #end = time.time()
+        end = time.time()
         #self.tenpy.printf("cg took:",end-start)
 
         return x,counter
