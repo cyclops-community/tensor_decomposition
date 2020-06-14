@@ -12,12 +12,12 @@ class DTALS_base():
     """Dimension tree for ALS optimizer
     """
 
-    def __init__(self,tenpy,T,A):
+    def __init__(self,tenpy,T,A,args):
         self.tenpy = tenpy
         self.T = T
         self.A = A
         self.R = A[0].shape[1]
-        self.sp = False
+        self.sp = args.sp
 
     @abc.abstractmethod
     def _einstr_builder(self,M,s,ii):
