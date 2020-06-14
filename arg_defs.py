@@ -239,11 +239,11 @@ def add_sparse_arguments(parser):
         metavar='int',
         help='mem-preserving ordering of low-rank sparse contractions (default: 0)')
     parser.add_argument(
-        '--sp-res',
+        '--sp',
         type=int,
         default=0,
         metavar='int',
-        help='TTTP-based sparse residual calculation (default: 0)')
+        help='sparse decomposition (default: 0)')
 
 def add_nls_arguments(parser):
     parser.add_argument(

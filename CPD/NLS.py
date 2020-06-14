@@ -55,29 +55,29 @@ class CP_fastNLS_Optimizer():
     damped Gauss-Newton problem of CP decomposition.
     """
 
-    def __init__(self,tenpy,T,A,maxiter,cg_tol=1e-3,num=0,diag=1,Arm=0,c=1e-04,tau=0.75,arm_iters=20,args=None):
+    def __init__(self,tenpy,T,A,args=None):
         self.tenpy = tenpy
         self.T = T
         self.A = A
-        self.cg_tol = cg_tol
-        self.num=num
+        self.cg_tol = args.cg_tol
+        self.num=args.num
         self.G = None
         self.gamma = None
         self.atol = 0
         self.total_iters = 0
-        self.maxiter = maxiter
+        self.maxiter = args.maxiter
         self.nls_iter = 0
         self.g_norm = 0
         self.temp = None
-        self.DTD = None
         self.GG = None
         self.GD = None
-        self.diag = diag
-        self.Arm = Arm
-        self.c = c
-        self.tau=tau
-        self.arm_iter= arm_iters
+        self.diag = args.diag
+        self.Arm = args.arm
+        self.c = args.c
+        self.tau=args.tau
+        self.arm_iter= args.arm_iters
         self.delta = None
+        self.sp = args.sp
         
 
 
@@ -158,31 +158,39 @@ class CP_fastNLS_Optimizer():
 
     def gradient(self):
         grad = []
-        q = queue.Queue()
-        for i in range(len(self.A)):
-            q.put(i)
-        s = [(list(range(len(self.A))),self.T)]
-        while not q.empty():
-            i = q.get()
-            while i not in s[-1][0]:
-                s.pop()
-                assert(len(s) >= 1)
-            while len(s[-1][0]) != 1:
+        if self.sp:
+            lst = self.A[:]
+            for i in range(len(self.A)):
+                out = self.tenpy.tensor(self.A[i].shape,sp=1.)
+                lst[i] = out 
+                self.tenpy.MTTKRP(self.T,lst,i)
+                grad.append(lst[i] - self.A[i].dot(self.gamma[i][i]))
+                lst[i] = self.A[i]
+
+        else:
+            q = queue.Queue()
+            for i in range(len(self.A)):
+                q.put(i)
+            s = [(list(range(len(self.A))),self.T)]
+            while not q.empty():
+                i = q.get()
+                while i not in s[-1][0]:
+                    s.pop()
+                    assert(len(s) >= 1)
+                while len(s[-1][0]) != 1:
+                    M = s[-1][1]
+                    idx = s[-1][0].index(i)
+                    ii = len(s[-1][0])-1
+                    if idx == len(s[-1][0])-1:
+                        ii = len(s[-1][0])-2
+                    einstr = self._einstr_builder(M,s,ii)
+                    N = self.tenpy.einsum(einstr,M,self.A[ii])
+                    ss = s[-1][0][:]
+                    ss.remove(ii)
+                    s.append((ss,N))
                 M = s[-1][1]
-                idx = s[-1][0].index(i)
-                ii = len(s[-1][0])-1
-                if idx == len(s[-1][0])-1:
-                    ii = len(s[-1][0])-2
-
-                einstr = self._einstr_builder(M,s,ii)
-                N = self.tenpy.einsum(einstr,M,self.A[ii])
-
-                ss = s[-1][0][:]
-                ss.remove(ii)
-                s.append((ss,N))
-            M = s[-1][1]
-            g = M - self.A[i].dot(self.gamma[i][i])
-            grad.append(g)
+                g = M - self.A[i].dot(self.gamma[i][i])
+                grad.append(g)
         return grad
     
     def gradient_GG(self,g):
@@ -422,7 +430,6 @@ class CP_fastNLS_Optimizer():
     def step(self,Regu):
         self.compute_G()
         self.compute_gamma()
-        flag = 0
         
         g= self.gradient()
         
@@ -457,7 +464,7 @@ class CP_fastNLS_Optimizer():
         self.nls_iter+=1
         
         
-        return [self.A,self.total_iters,flag]
+        return [self.A,self.total_iters]
 
 
 
