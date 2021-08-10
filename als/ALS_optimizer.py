@@ -12,11 +12,12 @@ class DTALS_base():
     """Dimension tree for ALS optimizer
     """
 
-    def __init__(self,tenpy,T,A):
+    def __init__(self,tenpy,T,A,args):
         self.tenpy = tenpy
         self.T = T
         self.A = A
         self.R = A[0].shape[1]
+        self.sp = args.sp
 
     @abc.abstractmethod
     def _einstr_builder(self,M,s,ii):
@@ -26,30 +27,43 @@ class DTALS_base():
     def _solve(self,i,Regu,s):
         return
 
+    @abc.abstractmethod
+    def _sp_solve(self,i,Regu,g):
+        return 
+
     def step(self,Regu):
-        q = queue.Queue()
-        for i in range(len(self.A)):
-            q.put(i)
-        s = [(list(range(len(self.A))),self.T)]
-        while not q.empty():
-            i = q.get()
-            while i not in s[-1][0]:
-                s.pop()
-                assert(len(s) >= 1)
-            while len(s[-1][0]) != 1:
-                M = s[-1][1]
-                idx = s[-1][0].index(i)
-                ii = len(s[-1][0])-1
-                if idx == len(s[-1][0])-1:
-                    ii = len(s[-1][0])-2
+        if self.sp:
+            s = []
+            for i in range(len(self.A)):
+                lst =self.A[:]
+                out = self.tenpy.tensor(self.A[i].shape,sp=1.)
+                lst[i] = out 
+                self.tenpy.MTTKRP(self.T,lst,i)
+                self.A[i] = self._sp_solve(i,Regu,lst[i])
+        else:
+            q = queue.Queue()
+            for i in range(len(self.A)):
+                q.put(i)
+            s = [(list(range(len(self.A))),self.T)]
+            while not q.empty():
+                i = q.get()
+                while i not in s[-1][0]:
+                    s.pop()
+                    assert(len(s) >= 1)
+                while len(s[-1][0]) != 1:
+                    M = s[-1][1]
+                    idx = s[-1][0].index(i)
+                    ii = len(s[-1][0])-1
+                    if idx == len(s[-1][0])-1:
+                        ii = len(s[-1][0])-2
 
-                einstr = self._einstr_builder(M,s,ii)
-                N = self.tenpy.einsum(einstr,M,self.A[ii])
+                    einstr = self._einstr_builder(M,s,ii)
+                    N = self.tenpy.einsum(einstr,M,self.A[ii])
 
-                ss = s[-1][0][:]
-                ss.remove(ii)
-                s.append((ss,N))
-            self.A[i] = self._solve(i,Regu,s)
+                    ss = s[-1][0][:]
+                    ss.remove(ii)
+                    s.append((ss,N))
+                self.A[i] = self._solve(i,Regu,s)
         return self.A
 
 

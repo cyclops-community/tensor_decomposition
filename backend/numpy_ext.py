@@ -34,6 +34,18 @@ def TTTP(T, A):
     A2.append(T)
     return np.einsum(einstr, *A2,optimize=True)
 
+def MTTKRP(T,A,idx):
+    T_inds = "".join([chr(ord('a')+i) for i in range(T.ndim)])
+    einstr = ""
+    A2 = []
+    for i in range(len(A)):
+        if i != idx:
+            einstr += chr(ord('a')+i) + chr(ord('a')+T.ndim) + ','
+            A2.append(A[i])
+    einstr += T_inds + "->" + chr(ord('a')+idx) + chr(ord('a')+T.ndim)
+    A2.append(T)
+    A[idx][:] = np.einsum(einstr, *A2,optimize=True)
+
 def is_master_proc():
     return True
 

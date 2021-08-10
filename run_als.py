@@ -47,10 +47,10 @@ def CP_ALS(tenpy,
 
     time_all = 0.
     if args is None:
-        optimizer = CP_DTALS_Optimizer(tenpy, T, A)
+        optimizer = CP_DTALS_Optimizer(tenpy, T, A,args)
     else:
         optimizer_list = {
-            'DT': CP_DTALS_Optimizer(tenpy, T, A),
+            'DT': CP_DTALS_Optimizer(tenpy, T, A,args),
             'PP': CP_PPALS_Optimizer(tenpy, T, A, args),
         }
         optimizer = optimizer_list[method]
@@ -59,7 +59,10 @@ def CP_ALS(tenpy,
     for i in range(num_iter):
 
         if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
-            res = get_residual(tenpy, T, A)
+            if args.sp:
+                res = get_residual_sp(tenpy,O,T,A)
+            else:
+                res = get_residual(tenpy, T, A)
             fitness = 1 - res / normT
 
             if tenpy.is_master_proc():
@@ -157,6 +160,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     arg_defs.add_general_arguments(parser)
+    arg_defs.add_sparse_arguments(parser)
     arg_defs.add_pp_arguments(parser)
     arg_defs.add_col_arguments(parser)
     args, _ = parser.parse_known_args()
@@ -178,6 +182,7 @@ if __name__ == "__main__":
     num_iter = args.num_iter
     tensor = args.tensor
     tlib = args.tlib
+    sp_frac = args.sp_fraction
 
     if tlib == "numpy":
         import backend.numpy_ext as tenpy
@@ -204,7 +209,7 @@ if __name__ == "__main__":
     elif tensor == "random":
         if args.decomposition == "CP":
             tenpy.printf("Testing random tensor")
-            [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, 1.,
+            [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, sp_frac,
                                                  args.seed)
         if args.decomposition == "Tucker":
             tenpy.printf("Testing random tensor")
@@ -231,7 +236,7 @@ if __name__ == "__main__":
         [T, O] = synthetic_tensors.init_neg_rand(tenpy, order, s, R, args.seed)
     elif tensor == "randn":
         tenpy.printf("Testing random tensor with normally distributed entries")
-        [T,O] = synthetic_tensors.init_randn(tenpy,order,s,R,1.,args.seed)
+        [T,O] = synthetic_tensors.init_randn(tenpy,order,s,R,sp_frac,args.seed)
 
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
