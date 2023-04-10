@@ -1,6 +1,8 @@
 ## Python Tensor Decomposition Algorithms
 
-This repository implements efficient numerical algorithm for Alternating Least Squares (ALS) in CP and Tucker decompositions, as well as fast Nonlinear Least Squares (NLS) for CP decomposition.
+This repository implements efficient numerical algorithm for Alternating Least Squares (ALS) in CP and Tucker decompositions, Pairwise perturbation algorithm for CP-ALS as well as fast Nonlinear Least Squares (NLS) for CP decomposition.
+
+It also implements Alternating Mahalanobis Distance Minimization and hybrid updates for CP decomposition
 
 This repository implements everything in Python, and is compatible with both Numpy backend, which allows fast seaquential running, and [Cyclops Tensor Framework](https://github.com/cyclops-community/ctf) backend, which allows fast distributed parallism.
 
@@ -76,4 +78,9 @@ Go to the Visdom folder then execute the following commands:
 visdom -port XXXXX
 
 python visdom_pull_server.py -port XXXXX
+```
+
+### Running CPD with AMDM and hybrid algorithms
+```
+python mahalanobis.py -h
 ```
