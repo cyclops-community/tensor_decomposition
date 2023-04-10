@@ -47,6 +47,12 @@ python run_nls.py -h
 ```
 to see existing input arguments and their functions with default values
 
+### CPD with AMDM and hybrid algorithms
+```
+python mahalanobis.py -h
+```
+to see existing input arguments and their functions with default values
+
 
 ### ALS/GN performance comparision
 
@@ -80,7 +86,4 @@ visdom -port XXXXX
 python visdom_pull_server.py -port XXXXX
 ```
 
-### Running CPD with AMDM and hybrid algorithms
-```
-python mahalanobis.py -h
-```
+
