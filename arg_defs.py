@@ -33,6 +33,12 @@ def add_general_arguments(parser):
         metavar='int',
         help='Update rank size (default: 10)')
     parser.add_argument(
+        '--R-app',
+        type=int,
+        default=10,
+        metavar='int',
+        help='Approximate rank (default: 10)')
+    parser.add_argument(
         '--num-iter',
         type=int,
         default=10,
@@ -119,6 +125,36 @@ def add_general_arguments(parser):
         type=float,
         metavar='float',
         help='Tolerance for stopping the iteration.')
+    parser.add_argument(
+        '--fit',
+        default=0.99,
+        type=float,
+        metavar='float',
+        help='Tolerance for stopping the iteration. default = 0.99')
+    parser.add_argument(
+        '--thresh',
+        type=int,
+        default=10,
+        metavar='int',
+        help='Threshhold for inverting singular vals (default : 10)')
+    parser.add_argument(
+        '--reduce-thresh',
+        type=int,
+        default=0,
+        metavar='int',
+        help='Reduce threhshold for hybrid algorithm (default : 0)')
+    parser.add_argument(
+        '--reduce-thresh-freq',
+        type=int,
+        default=5,
+        metavar='int',
+        help='Reduce threhshold iteration frequency for hybrid algorithm (default : 5)')
+    parser.add_argument(
+        '--calc-cond',
+        type=int,
+        default=1,
+        metavar='int',
+        help='Calculate CPD condition number (default : 1)')
     parser.add_argument(
         '--res-calc-freq',
         default=1,
@@ -244,6 +280,12 @@ def add_sparse_arguments(parser):
         default=0,
         metavar='int',
         help='TTTP-based sparse residual calculation (default: 0)')
+    parser.add_argument(
+        '--sp',
+        type=int,
+        default=0,
+        metavar='int',
+        help='sparse decomposition (default: 0)')
 
 def add_nls_arguments(parser):
     parser.add_argument(

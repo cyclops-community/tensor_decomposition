@@ -38,7 +38,7 @@ def compute_pseudo(tenpy,A,thresh,k):
 			p = 0
 			for j in range(s.shape[0]) :
 				if j<thresh :
-				#if s[1]/s[j] < thresh:
+				#if s[0]/s[j] < thresh:
 					s_new[j] = 1/s[j]
 			A_pseudo.append(tenpy.einsum('is,s,sj->ij',U,s_new,Vt))
 			sigs.append(s_new*s)
@@ -110,7 +110,6 @@ def Compute_condition_number(A):
     U = construct_Terracini(normalised_CP_f)
     #U=construct_Terracini(equilibrated_CP_f)
     U_,sig,Vt= la.svd(U)
-    U_2,sig2,Vt2= la.svd(U2)
     print('CPD condition number is',1/sig[-1])
     return 1/sig[-1]
 
@@ -134,9 +133,8 @@ def CP_Mahalanobis(tenpy,A,T,O,num_iter,thresh,csv_file=None,Regu=None,args=None
 	method = "M-norm"
 	fitness_old = 1
 	prev_res = np.finfo(np.float32).max
-	reduce_thresh = 0
 
-	if A[0].shape[1]<=15:
+	if args.calc_cond:
 		c= Compute_condition_number(A)
 	else:
 		c=0
@@ -190,12 +188,12 @@ def CP_Mahalanobis(tenpy,A,T,O,num_iter,thresh,csv_file=None,Regu=None,args=None
 				A[i] = solve_sys(tenpy, M, lst[i])
 			else:
 				A[i] = solve_sys(tenpy, M, rhs)
-		print('thresh is',thresh)
-		if reduce_thresh:
-			if k>0 and k%1==0 and thresh>=0:
+		#print('thresh is',thresh)
+		if args.reduce_thresh:
+			if k>0 and k%args.reduce_thresh_freq==0 and thresh>=0:
 				thresh = thresh - 1
 
-		if A[0].shape[1]<=15:
+		if args.calc_cond:
 			c= Compute_condition_number(A)
 		else:
 			c= 0
