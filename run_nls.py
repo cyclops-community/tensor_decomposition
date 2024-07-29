@@ -19,7 +19,7 @@ results_dir = join(parent_dir, 'results')
 
 def CP_NLS(tenpy,A,T,O,num_iter,csv_file=None,Regu=None,method='NLS',args=None,res_calc_freq=1):
 
-    from CPD.common_kernels import get_residual
+    from CPD.common_kernels import get_residual,get_residual_sp
     from CPD.NLS import CP_fastNLS_Optimizer
 
 

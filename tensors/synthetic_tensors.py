@@ -20,9 +20,13 @@ def init_rand(tenpy, order, s, R, sp_frac=1., seed=1):
 
 def init_neg_rand(tenpy, order, s, R, sp_frac=1., seed=1):
     tenpy.seed(seed * 1001)
+    np.random.seed(seed*1001)
     A = []
     for i in range(order):
-        A.append(-1 * tenpy.random((s, R)) + tenpy.random((s, R)))
+        if tenpy.name() == 'ctf':
+            A.append(tenpy.from_nparray(np.random.uniform(low = -1, high = 1, size=  (s,R))))
+        else:
+            A.append(np.random.uniform(low = -1, high = 1, size=  (s,R)))
     if sp_frac < 1.:
         O = tenpy.sparse_random([s] * order, 1., 1., sp_frac)
         T = tenpy.TTTP(O, A)
@@ -35,7 +39,6 @@ def init_neg_rand(tenpy, order, s, R, sp_frac=1., seed=1):
     
 def init_randn(tenpy, order, s, R, sp_frac=1., seed=1):
     tenpy.seed(seed * 1001)
-    np.random.seed(seed * 1001)
     A = []
     for i in range(order):
         if tenpy.name() == 'ctf':
