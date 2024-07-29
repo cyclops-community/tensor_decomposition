@@ -144,10 +144,10 @@ def CP_ALS(tenpy,
 
     time_all = 0.
     if args is None:
-        optimizer = CP_DTALS_Optimizer(tenpy, T, A,args)
+        optimizer = CP_DTALS_Optimizer(tenpy, T, A)
     else:
         optimizer_list = {
-            'DT': CP_DTALS_Optimizer(tenpy, T, A,args)
+            'DT': CP_DTALS_Optimizer(tenpy, T, A)
         }
         optimizer = optimizer_list[method]
 
