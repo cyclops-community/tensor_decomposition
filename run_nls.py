@@ -17,7 +17,7 @@ from utils import save_decomposition_results
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
-def CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='NLS',args=None,res_calc_freq=1,nls_tol= 1e-05,cg_tol = 1e-03, grad_tol = 0.1,num=1,switch_tol=0.1,nls_iter = 2, als_iter = 30, maxiter =0, varying =True, fact =2,lower = 1e-06, upper = 1,diag= 1, Arm = 0,c=1e-04,tau=0.75,arm_iters=20):
+def CP_NLS(tenpy,A,T,O,num_iter,csv_file=None,Regu=None,method='NLS',args=None,res_calc_freq=1):
 
     from CPD.common_kernels import get_residual,get_residual_sp
     from CPD.NLS import CP_fastNLS_Optimizer
@@ -30,7 +30,7 @@ def CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='NLS',args
     if Regu is None:
         Regu = 0
         
-    if varying:
+    if args.varying:
         decrease= True
         increase=False
     
@@ -39,16 +39,16 @@ def CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='NLS',args
 
     normT = tenpy.vecnorm(T)
     
-    if maxiter == 0:
-        maxiter = sum(T.shape)*R
+    if args.maxiter == 0:
+        args.maxiter = sum(T.shape)*R
     
     time_all = 0.
     if method == 'DT':
         method = 'NLS'
-        optimizer = CP_fastNLS_Optimizer(tenpy,T,A,maxiter,cg_tol,num,diag,Arm,c,tau,arm_iters,args)
+        optimizer = CP_fastNLS_Optimizer(tenpy,T,A,args)
     else:
         optimizer_list = {
-            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,maxiter,cg_tol,num,diag,Arm,c,tau,arm_iters,args)
+            'NLS': CP_fastNLS_Optimizer(tenpy,T,A,args)
         }
         optimizer = optimizer_list[method]
 
@@ -57,7 +57,7 @@ def CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='NLS',args
     for i in range(num_iter):
 
         if i % res_calc_freq == 0 or i==num_iter-1 :
-            if sp_res:
+            if args.sp:
                 res = get_residual_sp(tenpy,O,T,A)
             else:
                 res = get_residual(tenpy,T,A)
@@ -74,7 +74,7 @@ def CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='NLS',args
                     csv_file.flush()
         
            
-        if res<nls_tol:
+        if res<args.nls_tol:
             tenpy.printf('Method converged due to residual tolerance in',i,'iterations')
             
             break
@@ -82,7 +82,7 @@ def CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='NLS',args
         
         
         if method == 'NLS':
-            [A,iters,flag] = optimizer.step(Regu)
+            [A,iters] = optimizer.step(Regu)
         else:
             A = optimizer.step(Regu)
         count+=1
@@ -93,29 +93,29 @@ def CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file=None,Regu=None,method='NLS',args
         time_all += t1-t0
         
         if method == 'NLS':
-            if optimizer.g_norm < grad_tol:
+            if optimizer.g_norm < args.grad_tol:
                 tenpy.printf('Method converged due to gradient tolerance in',i,'iterations')
                 break
         
         #fitness_old = fitness
         
         
-        if varying:
-            if Regu <  lower:   
+        if args.varying:
+            if Regu <  args.lower:   
                 increase=True
                 decrease=False
                 
-            if Regu > upper:
+            if Regu > args.upper:
 
                 decrease= True
                 increase=False
                     
                     
             if increase:
-                Regu = Regu*fact
+                Regu = Regu*args.varying_fact
                     
             elif decrease:
-                Regu = Regu/fact
+                Regu = Regu/args.varying_fact
                 
         
     
@@ -151,30 +151,11 @@ if __name__ == "__main__":
     s = args.s
     order = args.order
     R = args.R
-    r = args.r
-    nls_tol = args.nls_tol
-    grad_tol = args.grad_tol
-    cg_tol = args.cg_tol
-    switch_tol = args.switch_tol
     nls_iter = args.nls_iter
-    als_iter = args.als_iter
-    num = args.num
     num_iter = args.num_iter
-    num_lowr_init_iter = args.num_lowr_init_iter
     sp_frac = args.sp_fraction
-    sp_res = args.sp_res
     tensor = args.tensor
-    maxiter = args.maxiter
     tlib = args.tlib
-    varying = args.varying
-    fact = args.varying_fact
-    lower = args.lower
-    upper = args.upper
-    diag = args.diag
-    Arm = args.arm
-    c = args.c
-    tau = args.tau
-    arm_iters=args.arm_iters
     
 
     if tlib == "numpy":
@@ -275,5 +256,5 @@ if __name__ == "__main__":
                 A.append(tenpy.random((T.shape[i], args,hosvd_core_dim[i])))
 
     
-    CP_NLS(tenpy,A,T,O,num_iter,sp_res,csv_file,Regu,args.method ,args, args.res_calc_freq,nls_tol,cg_tol,grad_tol,num,switch_tol,nls_iter, als_iter,maxiter,varying,fact,lower,upper,diag,Arm,c,tau,arm_iters)
+    CP_NLS(tenpy,A,T,O,num_iter,csv_file,Regu,args.method ,args, args.res_calc_freq)
     

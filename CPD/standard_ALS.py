@@ -22,6 +22,12 @@ class CP_DTALS_Optimizer(DTALS_base):
                          compute_lin_sysN(self.tenpy, self.A, i, Regu),
                          s[-1][1])
 
+    def _sp_solve(self,i,Regu,g):
+        return solve_sys(self.tenpy,
+                         compute_lin_sysN(self.tenpy, self.A, i, Regu),
+                         g)
+
+
 
 class CP_PPALS_Optimizer(PPALS_base, CP_DTALS_Optimizer):
     """Pairwise perturbation CP decomposition optimizer
@@ -29,7 +35,7 @@ class CP_PPALS_Optimizer(PPALS_base, CP_DTALS_Optimizer):
     """
     def __init__(self, tenpy, T, A, args):
         PPALS_base.__init__(self, tenpy, T, A, args)
-        CP_DTALS_Optimizer.__init__(self, tenpy, T, A)
+        CP_DTALS_Optimizer.__init__(self, tenpy, T, A,args)
 
     def _get_einstr(self, nodeindex, parent_nodeindex, contract_index):
         """Build the Einstein string for the contraction.
