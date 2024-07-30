@@ -72,13 +72,13 @@ def add_general_arguments(parser):
         help='choose tensor to test, available: random, negrandom,randn, random_col, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
     parser.add_argument(
         '--tlib',
-        default="ctf",
+        default="numpy",
         metavar='string',
         choices=[
             'ctf',
             'numpy',
             ],
-        help='choose tensor library teo test, choose between numpy and ctf (default: ctf)')
+        help='choose tensor library teo test, choose between numpy and ctf (default: numpy)')
     parser.add_argument(
         '--method',
         default="DT",
