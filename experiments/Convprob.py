@@ -1,18 +1,18 @@
 import numpy as np
 import time
-import CPD.standard_ALS3 as stnd_ALS
-import CPD.common_kernels as ck
+import tensor_decomposition.CPD.standard_ALS3 as stnd_ALS
+import tensor_decomposition.CPD.common_kernels as ck
 import sys
 import os
 import argparse
 from pathlib import Path
 from os.path import dirname, join
 import argparse
-import arg_defs as arg_defs
+import tensor_decomposition.arg_defs as arg_defs
 import csv
-from CPD.standard_ALS import CP_DTALS_Optimizer
-from CPD.NLS import CP_fastNLS_Optimizer
-from CPD.common_kernels import get_residual_sp, get_residual
+from tensor_decomposition.CPD.standard_ALS import CP_DTALS_Optimizer
+from tensor_decomposition.CPD.NLS import CP_fastNLS_Optimizer
+from tensor_decomposition.CPD.common_kernels import get_residual_sp, get_residual
 
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
@@ -199,9 +199,9 @@ if __name__ == "__main__":
     
     
     if tlib == "numpy":
-        import backend.numpy_ext as tenpy
+        import tensor_decomposition.backend.numpy_ext as tenpy
     elif tlib == "ctf":
-        import backend.ctf_ext as tenpy
+        import tensor_decomposition.backend.ctf_ext as tenpy
 
     if tenpy.is_master_proc():
         # print the arguments

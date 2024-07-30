@@ -6,16 +6,16 @@ import argparse
 import csv
 from pathlib import Path
 from os.path import dirname, join
-import tensors.synthetic_tensors as synthetic_tensors
-import tensors.real_tensors as real_tensors
+import tensor_decomposition.tensors.synthetic_tensors as synthetic_tensors
+import tensor_decomposition.tensors.real_tensors as real_tensors
 import argparse
-import arg_defs as arg_defs
+import tensor_decomposition.arg_defs as arg_defs
 import csv
 import numpy.linalg as la
 
-from CPD.common_kernels import get_residual,get_residual_sp,equilibrate,solve_sys,normalise
+from tensor_decomposition.CPD.common_kernels import get_residual,get_residual_sp,equilibrate,solve_sys,normalise
 
-from utils import save_decomposition_results
+from tensor_decomposition.utils.utils import save_decomposition_results
 
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
@@ -262,9 +262,9 @@ if __name__ == "__main__":
 	
 
 	if tlib == "numpy":
-		import backend.numpy_ext as tenpy
+		import tensor_decomposition.backend.numpy_ext as tenpy
 	elif tlib == "ctf":
-		import backend.ctf_ext as tenpy
+		import tensor_decomposition.backend.ctf_ext as tenpy
 		import ctf
 		tepoch = ctf.timer_epoch("ALS")
 		tepoch.begin();

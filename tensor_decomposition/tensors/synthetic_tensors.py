@@ -3,7 +3,7 @@ import sys
 import time
 
 
-def init_rand(tenpy, order, s, R, sp_frac=1., seed=1):
+def rand(tenpy, order, s, R, sp_frac=1., seed=1):
     tenpy.seed(seed * 1001)
     A = []
     for i in range(order):
@@ -18,7 +18,7 @@ def init_rand(tenpy, order, s, R, sp_frac=1., seed=1):
     return [T, O]
 
 
-def init_neg_rand(tenpy, order, s, R, sp_frac=1., seed=1):
+def neg_rand(tenpy, order, s, R, sp_frac=1., seed=1):
     tenpy.seed(seed * 1001)
     np.random.seed(seed*1001)
     A = []
@@ -37,7 +37,7 @@ def init_neg_rand(tenpy, order, s, R, sp_frac=1., seed=1):
     return [T, O]
     
     
-def init_randn(tenpy, order, s, R, sp_frac=1., seed=1):
+def randn(tenpy, order, s, R, sp_frac=1., seed=1):
     tenpy.seed(seed * 1001)
     A = []
     for i in range(order):
@@ -54,7 +54,7 @@ def init_randn(tenpy, order, s, R, sp_frac=1., seed=1):
         O = None
     return [T, O]
 
-#def init_randn(tenpy, order, s, R, sp_frac=1., seed=1):
+#def randn(tenpy, order, s, R, sp_frac=1., seed=1):
 #    tenpy.seed(seed * 1001)
 #    A = []
 #    for i in range(order):
@@ -76,7 +76,7 @@ def init_randn(tenpy, order, s, R, sp_frac=1., seed=1):
 #    return [T, O]
 
 
-def init_rand3(tenpy, s, R, sp_frac=1.):
+def rand3(tenpy, s, R, sp_frac=1.):
     A = tenpy.random((s, R))
     B = tenpy.random((s, R))
     C = tenpy.random((s, R))
@@ -92,7 +92,7 @@ def init_rand3(tenpy, s, R, sp_frac=1.):
     return [A, B, C, T, O]
 
 
-def init_mm(tenpy, s, R, seed=1):
+def mm(tenpy, s, R, seed=1):
     tenpy.seed(seed * 1001)
     sr = int(np.sqrt(s) + .1)
     assert(sr * sr == s)
@@ -110,7 +110,7 @@ def init_mm(tenpy, s, R, seed=1):
     return [T, O]
 
 
-def init_poisson(s, R):
+def poisson(s, R):
     sr = int(s**(1. / 2) + .1)
     assert(sr * sr == s)
     T = tenpy.tensor((sr, sr, sr, sr, sr, sr), sp=True)
@@ -132,7 +132,7 @@ def init_poisson(s, R):
     return [A, B, C, T, O]
 
 
-def init_mom_cons(tenpy, k):
+def mom_cons(tenpy, k):
     order = 4
     mode_weights = [1, 1, -1, -1]
 
@@ -154,7 +154,7 @@ def init_mom_cons(tenpy, k):
     return delta
 
 
-def init_mom_cons_sv(tenpy, k):
+def mom_cons_sv(tenpy, k):
     order = 4
     mode_weights = [1, 1, -1, -1]
 
@@ -181,7 +181,7 @@ def collinearity(v1, v2, tenpy):
     return tenpy.dot(v1, v2) / (tenpy.vecnorm(v1) * tenpy.vecnorm(v2))
 
 
-def init_collinearity_tensor(tenpy, s, order, R,
+def collinearity_tensor(tenpy, s, order, R,
                              col=[0.2, 0.8],
                              seed=1):
 

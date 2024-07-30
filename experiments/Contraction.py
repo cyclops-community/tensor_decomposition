@@ -1,13 +1,13 @@
-from CPD.NLS import fast_hessian_contract, CP_fastNLS_Optimizer
-from CPD.common_kernels import compute_number_of_variables, flatten_Tensor, reshape_into_matrices, solve_sys, get_residual
-from CPD.standard_ALS import CP_DTALS_Optimizer
+from tensor_decomposition.CPD.NLS import fast_hessian_contract, CP_fastNLS_Optimizer
+from tensor_decomposition.CPD.common_kernels import compute_number_of_variables, flatten_Tensor, reshape_into_matrices, solve_sys, get_residual
+from tensor_decomposition.CPD.standard_ALS import CP_DTALS_Optimizer
 import argparse
 import time
 import numpy as np
 import sys
 import os
 import csv
-import tensors.synthetic_tensors as synthetic_tensors
+import tensor_decomposition.tensors.synthetic_tensors as synthetic_tensors
 from pathlib import Path
 from os.path import dirname, join
 
@@ -18,13 +18,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--tlib',
-        default="ctf",
+        default="numpy",
         metavar='string',
         choices=[
             'ctf',
             'numpy',
             ],
-        help='choose tensor library to test, choose between numpy and ctf (default: ctf)')
+        help='choose tensor library to test, choose between numpy and numpy (default: numpy)')
     parser.add_argument(
         '--s',
         type=int,
@@ -82,9 +82,9 @@ if __name__ == "__main__":
         csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         
     if tlib == "numpy":
-        import backend.numpy_ext as tenpy
+        import tensor_decomposition.backend.numpy_ext as tenpy
     elif tlib == "ctf":
-        import backend.ctf_ext as tenpy
+        import tensor_decomposition.backend.ctf_ext as tenpy
         import ctf
         
         

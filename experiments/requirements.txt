@@ -1,6 +1,4 @@
 wget
-argparse
 pathlib
 pillow
 pyscf
-colorlover

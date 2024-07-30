@@ -1,4 +1,4 @@
-from CPD.common_kernels import compute_number_of_variables,  flatten_Tensor, reshape_into_matrices,  get_residual
+from tensor_decomposition.CPD.common_kernels import compute_number_of_variables,  flatten_Tensor, reshape_into_matrices,  get_residual
 from scipy.sparse.linalg import LinearOperator
 
 import scipy.sparse.linalg as spsalg

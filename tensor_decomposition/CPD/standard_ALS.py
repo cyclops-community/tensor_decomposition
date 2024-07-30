@@ -1,6 +1,6 @@
 import numpy as np
 from .common_kernels import solve_sys, compute_lin_sysN
-from als.ALS_optimizer import DTALS_base, PPALS_base
+from tensor_decomposition.als.ALS_optimizer import DTALS_base, PPALS_base
 
 
 class CP_DTALS_Optimizer(DTALS_base):

@@ -2,16 +2,18 @@ import numpy as np
 import sys
 import time
 import os
-import argparse
 import csv
 from pathlib import Path
 from os.path import dirname, join
-import tensors.synthetic_tensors as synthetic_tensors
-import tensors.real_tensors as real_tensors
+import tensor_decomposition
+import tensor_decomposition.tensors.synthetic_tensors as synthetic_tensors
+import tensor_decomposition.tensors.real_tensors as real_tensors
 import argparse
-import arg_defs as arg_defs
+import tensor_decomposition.utils.arg_defs as arg_defs
 import csv
-from utils import save_decomposition_results
+from tensor_decomposition.utils.utils import save_decomposition_results
+from tensor_decomposition.CPD.common_kernels import get_residual
+from tensor_decomposition.CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
 
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
@@ -29,8 +31,6 @@ def CP_ALS(tenpy,
            res_calc_freq=1,
            tol=1e-05):
 
-    from CPD.common_kernels import get_residual
-    from CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
 
     flag_dt = True
 
@@ -185,9 +185,9 @@ if __name__ == "__main__":
     sp_frac = args.sp_fraction
 
     if tlib == "numpy":
-        import backend.numpy_ext as tenpy
+        import tensor_decomposition.backend.numpy_ext as tenpy
     elif tlib == "ctf":
-        import backend.ctf_ext as tenpy
+        import tensor_decomposition.backend.ctf_ext as tenpy
         import ctf
         tepoch = ctf.timer_epoch("ALS")
         tepoch.begin()
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     elif tensor == "random":
         if args.decomposition == "CP":
             tenpy.printf("Testing random tensor")
-            [T, O] = synthetic_tensors.init_rand(tenpy, order, s, R, sp_frac,
+            [T, O] = synthetic_tensors.rand(tenpy, order, s, R, sp_frac,
                                                  args.seed)
         if args.decomposition == "Tucker":
             tenpy.printf("Testing random tensor")
@@ -217,7 +217,7 @@ if __name__ == "__main__":
             T = tenpy.random(shape)
             O = None
     elif tensor == "random_col":
-        [T, O] = synthetic_tensors.init_collinearity_tensor(
+        [T, O] = synthetic_tensors.collinearity_tensor(
             tenpy, s, order, R, args.col, args.seed)
     elif tensor == "amino":
         T = real_tensors.amino_acids(tenpy)
@@ -233,10 +233,10 @@ if __name__ == "__main__":
         O = None
     elif tensor == "negrandom":
         tenpy.printf("Testing random tensor with negative entries")
-        [T, O] = synthetic_tensors.init_neg_rand(tenpy, order, s, R, args.seed)
+        [T, O] = synthetic_tensors.neg_rand(tenpy, order, s, R, args.seed)
     elif tensor == "randn":
         tenpy.printf("Testing random tensor with normally distributed entries")
-        [T,O] = synthetic_tensors.init_randn(tenpy,order,s,R,sp_frac,args.seed)
+        [T,O] = synthetic_tensors.randn(tenpy,order,s,R,sp_frac,args.seed)
 
     tenpy.printf("The shape of the input tensor is: ", T.shape)
 
