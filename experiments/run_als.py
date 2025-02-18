@@ -6,7 +6,7 @@ import csv
 from pathlib import Path
 from os.path import dirname, join
 import tensor_decomposition
-import tensor_decomposition.tensors.synthetic_tensors as synthetic_tensors
+#import tensor_decomposition.tensors.synthetic_tensors as synthetic_tensors
 import tensor_decomposition.tensors.real_tensors as real_tensors
 import argparse
 import tensor_decomposition.utils.arg_defs as arg_defs
@@ -14,298 +14,157 @@ import csv
 from tensor_decomposition.utils.utils import save_decomposition_results
 from tensor_decomposition.CPD.common_kernels import get_residual,get_residual_sp,compute_condition_number
 from tensor_decomposition.CPD.standard_ALS import CP_DTALS_Optimizer, CP_PPALS_Optimizer
-
+##########################################
+#import Generate_plots_old
+#import error_computation
+from scipy.linalg import svd
+import numpy.linalg as la
+import matplotlib.pyplot as plt
+import copy
+import random
+from generate_initial_guess import generate_initial_guess
+##########################################
 parent_dir = dirname(__file__)
 results_dir = join(parent_dir, 'results')
 
 
 def CP_ALS(tenpy,
-           A,
+           T_true,
+           A_ini,
            T,
            O,
-           num_iter,
+           args,
+           cov_empirical,
+           cov_pinv_empirical,
+           M_empirical_pinv,
            csv_file=None,
            Regu=None,
            method='DT',
-           args=None,
            res_calc_freq=1,
            tol=1e-05):
 
+##
 
-    flag_dt = True
-
-    if csv_file is not None:
-        csv_writer = csv.writer(csv_file,
-                                delimiter=',',
-                                quotechar='|',
-                                quoting=csv.QUOTE_MINIMAL)
-
-    if Regu is None:
-        Regu = 0
-
-    normT = tenpy.vecnorm(T)
-
-    time_all = 0.
-    if args is None:
-        optimizer = CP_DTALS_Optimizer(tenpy, T, A,args)
-    else:
-        optimizer_list = {
-            'DT': CP_DTALS_Optimizer(tenpy, T, A,args),
-            'PP': CP_PPALS_Optimizer(tenpy, T, A, args),
-        }
-        optimizer = optimizer_list[method]
-
-    fitness_old = 0
-    for i in range(num_iter):
-
-        if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
-            if args.fast_residual and i != 0:
-               res = optimizer.compute_fast_residual()
-            else:
-                if args.sp and O is not None:
-                    res = get_residual_sp(tenpy,O,T,A)
+    final_residuals = []
+    all_residuals = []
+    all_norm_mahalanobis_empirical = []
+    for run in range(args.num_runs):
+        #A = copy.deepcopy(A_ini)  
+        A = [np.random.rand(T.shape[i], args.R) for i in range(T.ndim)]
+        #A = generate_initial_guess(tenpy, T, args)
+        print(f"Run {run + 1}/{args.num_runs}")
+        
+        residuals = []
+        norm_mahalanobis_emp = []
+    ##
+        flag_dt = True
+    
+        if csv_file is not None:
+            csv_writer = csv.writer(csv_file,
+                                    delimiter=',',
+                                    quotechar='|',
+                                    quoting=csv.QUOTE_MINIMAL)
+            
+        if Regu is None:
+            Regu = 0
+    
+        normT = tenpy.vecnorm(T)
+    
+        time_all = 0.
+        if args is None:
+            optimizer = CP_DTALS_Optimizer(tenpy, T, A,args)
+        else:
+            optimizer_list = {
+                'DT': CP_DTALS_Optimizer(tenpy, T, A,args),
+                'PP': CP_PPALS_Optimizer(tenpy, T, A, args),
+            }
+            optimizer = optimizer_list[method]
+    
+        fitness_old = 0
+        for i in range(args.num_iter):
+    
+            if i % res_calc_freq == 0 or i == args.num_iter - 1 or not flag_dt:
+                if args.fast_residual and i != 0:
+                   res = optimizer.compute_fast_residual()
                 else:
-                    res = get_residual(tenpy, T, A)
-            fitness = 1 - res / normT
-
-            if args.calc_cond and R < 15 and tenpy.name() == 'numpy':
-                cond = compute_condition_number(tenpy, A)
-                if tenpy.is_master_proc():
-                    print("[", i, "] Residual is", res, "fitness is: ", fitness)
-                    # write to csv file
-                    if csv_file is not None:
-                        csv_writer.writerow([i, time_all, res, fitness, flag_dt,cond])
-                        csv_file.flush()
+                    if args.sp and O is not None:
+                        res = get_residual_sp(tenpy,O,T,A)
+                    else:
+                        res = get_residual(tenpy, T, A)
+                        ##
+                residuals.append(res)
+                fitness = 1 - res / normT
+       #########################################################################
+                T_reconstructed = tenpy.zeros(T.shape)
+                T_reconstructed = T_reconstructed + tenpy.einsum('ir,jr,kr->ijk', *A)
+                diff = T_true - T_reconstructed 
+                norm_mahalanobis_empirical = np.einsum('ip,jq,kr,ijk,pqr->',  *M_empirical_pinv,  diff, diff)
+                norm_mahalanobis_emp.append(norm_mahalanobis_empirical)
+                ####
+        ################################################################################################
+                if args.calc_cond and R < 15 and tenpy.name() == 'numpy':
+                    cond = compute_condition_number(tenpy, A)
+                    if tenpy.is_master_proc():
+                        print("[", i, "] Residual is", res, "fitness is: ", fitness)
+                        #print(f"[{i}] Residual: {res}, Fitness: {fitness}, Mahalanobis Norm (True):                                           {norm_mahalanobis_true}, Mahalanobis Norm (Empirical): {norm_mahalanobis_empirical}")
+                        # write to csv file
+                        if csv_file is not None:
+                            ###############################################
+                            csv_writer.writerow([i, time_all, res, fitness, flag_dt,cond,                                    norm_mahalanobis_empirical, err_UW])
+                            csv_file.flush()
+                            
+                else:
+                    if tenpy.is_master_proc():
+                        print("[", i, "] Residual is", res, "fitness is: ", fitness)
+                        # write to csv file
+                        if csv_file is not None:
+                            csv_writer.writerow([i, time_all, res, fitness, flag_dt,                                        norm_mahalanobis_empirical, err_UW])
+                            ####################################################
+                            csv_file.flush()
+    
+            if res < tol:
+                print('Method converged in', i, 'iterations')
+                break
+            t0 = time.time()
+            if method == 'PP':
+                A, pp_restart = optimizer.step(Regu)
+                flag_dt = not pp_restart
             else:
-                if tenpy.is_master_proc():
-                    print("[", i, "] Residual is", res, "fitness is: ", fitness)
-                    # write to csv file
-                    if csv_file is not None:
-                        csv_writer.writerow([i, time_all, res, fitness, flag_dt])
-                        csv_file.flush()
+                A = optimizer.step(Regu)
+            t1 = time.time()
+            tenpy.printf("[", i, "] Sweep took", t1 - t0, "seconds")
+    
+            time_all += t1 - t0
+            fitness_old = fitness
+    ##
+        final_residuals.append(residuals[-1])
+        all_residuals.append(residuals)
+        all_norm_mahalanobis_empirical.append(norm_mahalanobis_emp)
+        
+        tenpy.printf(method + " method took", time_all, "seconds overall")
+    
+        if args.save_tensor:
+            folderpath = join(results_dir, arg_defs.get_file_prefix(args))
+            save_decomposition_results(T, A, tenpy, folderpath)
+    ##
+    best_run_index = np.argmin(final_residuals)
+    best_run_residual = all_residuals[best_run_index]
+    best_run_norm_mahalanobis_empirical = all_norm_mahalanobis_empirical[best_run_index]
+    iterations = np.arange(1, len(best_run_residual) + 1)
+    final_residuals = np.sort(final_residuals)[::-1]
+    
+    min_length = min(len(residuals) for residuals in all_residuals)
+    # Truncate each run's residuals to the minimum length
+    truncated_residuals = [residuals[-min_length:] for residuals in all_residuals]
+    truncated_norm_mahalanobis_empirical = [rr[-min_length:] for rr in all_norm_mahalanobis_empirical]
+    #truncated_norm_mahalanobis_true = [rr[-min_length:] for rr in all_norm_mahalanobis_true]
+    # Convert to a NumPy array
+    truncated_residuals = np.array(truncated_residuals)  
+    truncated_norm_mahalanobis_empirical = np.array(truncated_norm_mahalanobis_empirical)
+    #truncated_norm_mahalanobis_true = np.array(truncated_norm_mahalanobis_true)
+    mean_residuals = np.mean(truncated_residuals, axis=0) # Compute mean and standard deviation across runs for each                                                                          iteration
+    mean_norm_mahalanobis_empirical = np.mean(truncated_norm_mahalanobis_empirical, axis=0)
+    std_residuals = np.std(truncated_residuals, axis=0) 
 
-        if res < tol:
-            print('Method converged in', i, 'iterations')
-            break
-        t0 = time.time()
-        if method == 'PP':
-            A, pp_restart = optimizer.step(Regu)
-            flag_dt = not pp_restart
-        else:
-            A = optimizer.step(Regu)
-        t1 = time.time()
-        tenpy.printf("[", i, "] Sweep took", t1 - t0, "seconds")
-
-        time_all += t1 - t0
-        fitness_old = fitness
-
-    tenpy.printf(method + " method took", time_all, "seconds overall")
-
-    if args.save_tensor:
-        folderpath = join(results_dir, arg_defs.get_file_prefix(args))
-        save_decomposition_results(T, A, tenpy, folderpath)
-
-    return res
-
-
-def Tucker_ALS(tenpy,
-               A,
-               T,
-               O,
-               num_iter,
-               csv_file=None,
-               Regu=None,
-               method='DT',
-               args=None,
-               res_calc_freq=1):
-
-    from tensor_decomposition.Tucker.common_kernels import get_residual
-    from tensor_decomposition.Tucker.standard_ALS import Tucker_DTALS_Optimizer, Tucker_PPALS_Optimizer
-
-    flag_dt = True
-
-    if csv_file is not None:
-        csv_writer = csv.writer(csv_file,
-                                delimiter=',',
-                                quotechar='|',
-                                quoting=csv.QUOTE_MINIMAL)
-
-    time_all = 0.
-    optimizer_list = {
-        'DT': Tucker_DTALS_Optimizer(tenpy, T, A),
-        'PP': Tucker_PPALS_Optimizer(tenpy, T, A, args),
-    }
-    optimizer = optimizer_list[method]
-
-    normT = tenpy.vecnorm(T)
-
-    for i in range(num_iter):
-        if i % res_calc_freq == 0 or i == num_iter - 1 or not flag_dt:
-            res = get_residual(tenpy, T, optimizer.A)
-            fitness = 1 - res / normT
-
-            if tenpy.is_master_proc():
-                print("[", i, "] Residual is", res, "fitness is: ", fitness)
-                # write to csv file
-                if csv_file is not None:
-                    csv_writer.writerow([i, time_all, res, fitness, flag_dt])
-                    csv_file.flush()
-        t0 = time.time()
-        if method == 'PP':
-            A, pp_restart = optimizer.step(Regu)
-            flag_dt = not pp_restart
-        else:
-            A = optimizer.step(Regu)
-        t1 = time.time()
-        tenpy.printf("Sweep took", t1 - t0, "seconds")
-        time_all += t1 - t0
-    tenpy.printf("Naive method took", time_all, "seconds overall")
-
-    if args.save_tensor:
-        folderpath = join(results_dir, arg_defs.get_file_prefix(args))
-        save_decomposition_results(T, A, tenpy, folderpath)
-
-    return A, res
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    arg_defs.add_general_arguments(parser)
-    arg_defs.add_sparse_arguments(parser)
-    arg_defs.add_pp_arguments(parser)
-    arg_defs.add_col_arguments(parser)
-    args, _ = parser.parse_known_args()
-
-    # Set up CSV logging
-    csv_path = join(results_dir, arg_defs.get_file_prefix(args) + '.csv')
-    is_new_log = not Path(csv_path).exists()
-    csv_file = open(csv_path, 'a')
-    csv_writer = csv.writer(csv_file,
-                            delimiter=',',
-                            quotechar='|',
-                            quoting=csv.QUOTE_MINIMAL)
-
-    s = args.s
-    order = args.order
-    R = args.R
-    r = args.r
-    tol = args.tol
-    num_iter = args.num_iter
-    tensor = args.tensor
-    tlib = args.tlib
-    sp_frac = args.sp_fraction
-    if args.R_app is None:
-        R_app = args.R
-    else:
-        R_app = args.R_app
-
-
-
-    if tlib == "numpy":
-        import tensor_decomposition.backend.numpy_ext as tenpy
-    elif tlib == "ctf":
-        import tensor_decomposition.backend.ctf_ext as tenpy
-        import ctf
-        tepoch = ctf.timer_epoch("ALS")
-        tepoch.begin()
-
-
-    if tenpy.is_master_proc():
-        # print the arguments
-        for arg in vars(args):
-            print(arg + ':', getattr(args, arg))
-        # initialize the csv file
-        if is_new_log:
-            if args.calc_cond and R < 15:
-                csv_writer.writerow(
-                    ['iterations', 'time', 'residual', 'fitness', 'dt_step', 'cond'])
-            else:
-                csv_writer.writerow(
-                    ['iterations', 'time', 'residual', 'fitness', 'dt_step'])
-
-    tenpy.seed(args.seed)
-
-    if args.load_tensor != '':
-        T = tenpy.load_tensor_from_file(args.load_tensor + 'tensor.npy')
-        O = None
-    elif tensor == "random":
-        if args.decomposition == "CP":
-            tenpy.printf("Testing random tensor")
-            [T, O] = synthetic_tensors.rand(tenpy, order, s, R, sp_frac,
-                                                 args.seed)
-        if args.decomposition == "Tucker":
-            tenpy.printf("Testing random tensor")
-            shape = s * np.ones(order).astype(int)
-            T = tenpy.random(shape)
-            O = None
-    elif tensor == "random_col":
-        [T, O] = synthetic_tensors.collinearity_tensor(
-            tenpy, s, order, R, args.col, args.seed)
-    elif tensor == "amino":
-        T = real_tensors.amino_acids(tenpy)
-        O = None
-    elif tensor == "coil100":
-        T = real_tensors.coil_100(tenpy)
-        O = None
-    elif tensor == "timelapse":
-        T = real_tensors.time_lapse_images(tenpy)
-        O = None
-    elif tensor == "scf":
-        T = real_tensors.get_scf_tensor(tenpy)
-        O = None
-    elif tensor == "negrandom":
-        tenpy.printf("Testing random tensor with negative entries")
-        [T, O] = synthetic_tensors.neg_rand(tenpy, order, s, R, args.seed)
-    elif tensor == "randn":
-        tenpy.printf("Testing random tensor with normally distributed entries")
-        [T,O] = synthetic_tensors.randn(tenpy,order,s,R,sp_frac,args.seed)
-
-    tenpy.printf("The shape of the input tensor is: ", T.shape)
-
-
-    Regu = args.regularization
-
-    A = []
-    if args.load_tensor != '':
-        for i in range(T.ndim):
-            A.append(
-                tenpy.load_tensor_from_file(args.load_tensor + 'mat' + str(i) +
-                                            '.npy'))
-    elif args.hosvd != 0:
-        if args.decomposition == "CP":
-            for i in range(T.ndim):
-                A.append(tenpy.random((args.hosvd_core_dim[i], R_app)))
-        elif args.decomposition == "Tucker":
-            from tensor_decomposition.Tucker.common_kernels import hosvd
-            A = hosvd(tenpy, T, args.hosvd_core_dim, compute_core=False)
-    else:
-        if args.decomposition == "CP":
-            for i in range(T.ndim):
-                A.append(tenpy.random((T.shape[i], R_app)))
-        else:
-            for i in range(T.ndim):
-                A.append(tenpy.random((T.shape[i], args, hosvd_core_dim[i])))
-
-    if args.decomposition == "CP":
-        if args.hosvd:
-            from tensor_decomposition.Tucker.common_kernels import hosvd
-            transformer, compressed_T = hosvd(tenpy,
-                                              T,
-                                              args.hosvd_core_dim,
-                                              compute_core=True)
-            CP_ALS(tenpy, A, compressed_T, O, 100, csv_file, Regu, 'DT', args,
-                   args.res_calc_freq, tol)
-            A_fullsize = []
-            for i in range(T.ndim):
-                A_fullsize.append(tenpy.dot(transformer[i], A[i]))
-            CP_ALS(tenpy, A_fullsize, T, O, num_iter, csv_file, Regu,
-                   args.method, args, args.res_calc_freq, tol)
-        else:
-            CP_ALS(tenpy, A, T, O, num_iter, csv_file, Regu, args.method, args,
-                   args.res_calc_freq, tol)
-    elif args.decomposition == "Tucker":
-        Tucker_ALS(tenpy, A, T, O, num_iter, csv_file, Regu, args.method, args,
-                   args.res_calc_freq)
-    if tlib == "ctf":
-        tepoch.end()
+     
+    return best_run_residual, best_run_norm_mahalanobis_empirical, final_residuals, mean_residuals, std_residuals

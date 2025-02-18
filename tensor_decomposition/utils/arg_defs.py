@@ -8,6 +8,47 @@ def add_general_arguments(parser):
         required=False,
         metavar='str',
         help='Output csv file name prefix (default: None)')
+    ############################################################
+    parser.add_argument(
+        '--top_sin_val',
+        type=int,
+        default=1,
+        metavar='int',
+        help='Input the number of top singular values of empirical covariance (default: 3)')
+    parser.add_argument(
+        '--epsilon',
+        type=float,
+        default=1e-4,
+        metavar='float',
+        help='Noise level (default: 1e-4)')
+    parser.add_argument(
+        '--k',
+        type=int,
+        default=3,
+        metavar='int',
+        help='Input rank of noise tensor (default: 3)')
+    parser.add_argument(
+        '--alpha',
+        type=float,
+        default=1.5,
+        metavar='float',
+        help='Input the rate of singular value decay (default: 1)')
+    parser.add_argument(
+        '--num_runs',
+        type=int,
+        default=5,
+        metavar='int',
+        help='Input number of runs (default: 5)')
+    parser.add_argument(
+        '--type_noisy_tensor',
+        default="old_model",
+        metavar='string',
+        choices=[
+            'old_model',
+            'new_model'
+            ],
+        help='choose type of noisy tensor to test, available: old_model, new_model (default: old_model)')
+    ############################################################
     parser.add_argument(
         '--order',
         type=int,
@@ -35,7 +76,7 @@ def add_general_arguments(parser):
     parser.add_argument(
         '--R-app',
         type=int,
-        default=None,
+        default=10,
         metavar='int',
         help='Approximate rank (default: None here but changed to R)')
     parser.add_argument(
@@ -52,9 +93,12 @@ def add_general_arguments(parser):
         help='regularization (default: 0.0000001)')
     parser.add_argument(
         '--tensor',
-        default="random",
+        #default="random",
+        #default="noisy_tensor",
+        default = "random_col",
         metavar='string',
         choices=[
+            'noisy_tensor'
             'random',
             'random_col',
             'mom_cons',
@@ -69,7 +113,7 @@ def add_general_arguments(parser):
             'negrandom',
             'randn'
             ],
-        help='choose tensor to test, available: random, negrandom,randn, random_col, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
+        help='choose tensor to test, available: noisy_tensor, random, negrandom,randn, random_col, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: noisy_tensor)')
     parser.add_argument(
         '--tlib',
         default="numpy",
@@ -165,7 +209,7 @@ def add_general_arguments(parser):
 
 def add_pp_arguments(parser):
     parser.add_argument(
-        '--tol-restart-dt',
+        '--tol_restart_dt',
         default=0.01,
         type=float,
         metavar='float',
@@ -290,7 +334,7 @@ def add_amdm_arguments(parser):
         metavar='int',
         help='Reduce threhshold iteration frequency for hybrid algorithm (default : 5)')
     parser.add_argument(
-        '--num-vals',
+        '--num_vals',
         type=int,
         default=None,
         metavar='int',
@@ -414,17 +458,58 @@ def add_nls_arguments(parser):
         metavar='str',
         help='Output csv file name prefix (default: None)')
     parser.add_argument(
-        '--order',
-        type=int,
-        default=3,
-        metavar='int',
-        help='Tensor order (default: 3)')
-    parser.add_argument(
         '--s',
         type=int,
         default=64,
         metavar='int',
         help='Input tensor size in each dimension (default: 64)')
+ ############################################################
+    parser.add_argument(
+        '--top_sin_val',
+        type=int,
+        default=1,
+        metavar='int',
+        help='Input the number of top singular values of empirical covariance (default: 3)')
+    parser.add_argument(
+        '--epsilon',
+        type=float,
+        default=1e-4,
+        metavar='float',
+        help='Noise level (default: 1e-4)')
+    parser.add_argument(
+        '--k',
+        type=int,
+        default=3,
+        metavar='int',
+        help='Input rank of noise tensor (default: 3)')
+    parser.add_argument(
+        '--alpha',
+        type=float,
+        default=1.5,
+        metavar='float',
+        help='Input the rate of singular value decay (default: 1)')
+    parser.add_argument(
+        '--num_runs',
+        type=int,
+        default=5,
+        metavar='int',
+        help='Input number of runs (default: 5)')
+    parser.add_argument(
+        '--type-noisy-tensor',
+        default="new_model",
+        metavar='string',
+        choices=[
+            'old_model',
+            'new_model'
+            ],
+        help='choose type of noisy tensor to test, available: old, new (default: new)')
+    ############################################################
+    parser.add_argument(
+        '--order',
+        type=int,
+        default=3,
+        metavar='int',
+        help='Tensor order (default: 3)')
     parser.add_argument(
         '--R',
         type=int,
@@ -451,9 +536,10 @@ def add_nls_arguments(parser):
         help='regularization (default: 0.0000001)')
     parser.add_argument(
         '--tensor',
-        default="random",
+        default="noisy_tensor",
         metavar='string',
         choices=[
+            'noisy_tensor'
             'random',
             'random_col',
             'mom_cons',
@@ -468,7 +554,7 @@ def add_nls_arguments(parser):
             'negrandom',
             'randn'
             ],
-        help='choose tensor to test, available: random, negrandom,randn, random_col, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
+        help='choose tensor to test, available: noisy_tensor, random, negrandom,randn, random_col, mm, mom_cons, mom_cons_sv, amino, coil100, timelapse, scf (default: random)')
     parser.add_argument(
         '--tlib',
         default="ctf",
@@ -618,6 +704,11 @@ def get_file_prefix(args):
             's' + str(args.s),
             'R' + str(args.R),
             'r' + str(args.r),
+            'k' + str(args.k),
+            'epsilon' + str(args.epsilon),
+            #'num_iter' + str(args.num_iter),
+            #'top_sin_val' + str(args.top_sin_val),
+            #'r' + str(args.r),
             #'spfrac' + str(args.sp_fraction),
             #'splowrank' + str(args.sp_updatelowrank),
             #'runlowrank' + str(args.run_lowrank),
@@ -626,6 +717,9 @@ def get_file_prefix(args):
             #'pois' + str(args.pois_test),
             #'numslices' + str(args.num_slices),
             #'numinit-iter' + str(args.num_lowr_init_iter),
+            'alpha' + str(args.alpha),
+            'num_runs' + str(args.num_runs),
             'regu' + str(args.regularization),
             'tlib' + str(args.tlib)
+            #,'num_vals', + str(args.num_vals)
         ]))
